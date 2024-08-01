@@ -1,0 +1,9 @@
+{% extends 'main/base.html' %}
+{% load static %}
+
+
+{%block context%}
+<div class="d-flex justify-content-center m-4">
+        <a href="{% url 'main:upload_maga'%}" class="btn btn-danger m-1">Загрузить мага</a>
+</div>
+{%endblock%}
