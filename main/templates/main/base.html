@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Kurale&display=swap" rel="stylesheet">
   <title>
-        {% block title %} Магазин {% endblock %}
+        {% block title %} CKD {% endblock %}
   </title>
 </head>
   <body class="">
@@ -23,6 +23,10 @@
 
     <div class="text-center" style="background: #3481B8;">
         <span class="shapka">CKD</span>
+
+            <div class="d-flex justify-content-center m-4">
+                <a href="{% url 'main:index'%}" class="btn btn-danger m-1">Главная</a>
+            </div>
     </div>
 
 
