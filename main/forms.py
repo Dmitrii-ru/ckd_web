@@ -41,3 +41,7 @@ class FileUploadMagaForm(forms.Form):
             sheet_name
         )
         return file
+
+
+class FileUploadFindProductsCode(forms.Form):
+    file = forms.FileField()

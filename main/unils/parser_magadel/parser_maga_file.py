@@ -102,7 +102,7 @@ def possible_deliveries_fanc(columns_possible_deliveries, row):
 
 
 def parser_maga_file_func(file):
-    df,header = open_df(file)
+    df, header = open_df(file)
     with zipfile.ZipFile(file, 'r') as zip_ref:
         with zip_ref.open('xl/worksheets/sheet1.xml') as sheet_file:
             sheet_tree = ET.parse(sheet_file)
@@ -185,3 +185,11 @@ def parser_maga_file_func(file):
 
             if list_product_to_create:
                 ProductDKCMagadel.objects.bulk_create(list_product_to_create, batch_size=1000)
+
+            maga = Magadel.objects.first()
+            if maga:
+                maga.name = file.name
+            else:
+                maga = Magadel(name=file.name)
+            maga.save()
+
