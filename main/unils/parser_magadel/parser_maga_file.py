@@ -1,5 +1,6 @@
 import os
 
+from django.db import transaction
 from main.forms import validate_columns_df
 from main.models import *
 import openpyxl
@@ -96,100 +97,106 @@ def possible_deliveries_fanc(columns_possible_deliveries, row):
                     list_possible_deliveries_date += f', {i} - {value}'
                 else:
                     list_possible_deliveries_date = f'{i} - {value}'
-        except KeyError:
-            pass
+
+        except:
+            return '', 0
     return list_possible_deliveries_date, summ
 
 
 def parser_maga_file_func(file):
-    df, header = open_df(file)
-    with zipfile.ZipFile(file, 'r') as zip_ref:
-        with zip_ref.open('xl/worksheets/sheet1.xml') as sheet_file:
-            sheet_tree = ET.parse(sheet_file)
-            sheet_root = sheet_tree.getroot()
-            schema_rows = sheet_root.findall('.//{http://schemas.openxmlformats.org/spreadsheetml/2006/main}row')
+    try:
+        with transaction.atomic():
+            df, header = open_df(file)
+            with zipfile.ZipFile(file, 'r') as zip_ref:
+                with zip_ref.open('xl/worksheets/sheet1.xml') as sheet_file:
+                    sheet_tree = ET.parse(sheet_file)
+                    sheet_root = sheet_tree.getroot()
+                    schema_rows = sheet_root.findall(
+                        './/{http://schemas.openxmlformats.org/spreadsheetml/2006/main}row')
 
-            parent_dict = {}
-            len_df = int(len(df))
-            count = 0
+                    parent_dict = {}
+                    len_df = int(len(df))
+                    count = 0
 
-            db_products_dict = {obj.code: obj for obj in ProductDKCMagadel.objects.all()}
-            db_parens_dict = {obj.name: obj for obj in GroupProductDKCMagadel.objects.all()}
+                    db_products_dict = {obj.code: obj for obj in ProductDKCMagadel.objects.all()}
+                    db_parens_dict = {obj.name: obj for obj in GroupProductDKCMagadel.objects.all()}
 
-            list_product_to_create = []
-            list_product_to_update = []
+                    list_product_to_create = []
+                    list_product_to_update = []
 
-            const_code = const['Код']
-            const_free_balance = const['Свободный остаток']
-            const_about = const['Описание']
-            const_unit = const['ЕдИзм']
+                    const_code = const['Код']
+                    const_free_balance = const['Свободный остаток']
+                    const_about = const['Описание']
+                    const_unit = const['ЕдИзм']
 
-            columns_possible_deliveries = get_columns_possible_deliveries(df.columns)
+                    columns_possible_deliveries = get_columns_possible_deliveries(df.columns)
+                    print(columns_possible_deliveries)
+                    for schema_row in schema_rows[header + 1:]:
+                        count += 1
+                        outline_level = int(schema_row.get('outlineLevel', 0))
+                        row_number = int(schema_row.get('r')) - header - 2
+                        if row_number < len_df:
+                            row = df.iloc[row_number]
+                            name_lvl = get_name_lvl(outline_level, row)
+                            if name_lvl:
+                                parent_dict = clean_parent_dict(parent_dict, outline_level, name_lvl)
 
-            for schema_row in schema_rows[header + 1:]:
-                count += 1
-                outline_level = int(schema_row.get('outlineLevel', 0))
-                row_number = int(schema_row.get('r')) - header - 2
-                if row_number < len_df:
-                    row = df.iloc[row_number]
-                    name_lvl = get_name_lvl(outline_level, row)
-                    if name_lvl:
-                        parent_dict = clean_parent_dict(parent_dict, outline_level, name_lvl)
+                            code = row.get(const_code, None)
+                            if code:
 
-                    code = row.get(const_code, None)
-                    if code:
+                                db_parens_dict, parent = get_parent(db_parens_dict, parent_dict)
+                                product = db_products_dict.get(code, None)
 
-                        db_parens_dict, parent = get_parent(db_parens_dict, parent_dict)
-                        product = db_products_dict.get(code, None)
+                                possible_deliveries, possible_deliveries_sum = possible_deliveries_fanc(
+                                    columns_possible_deliveries, row
+                                )
 
-                        possible_deliveries, possible_deliveries_sum = possible_deliveries_fanc(
-                            columns_possible_deliveries, row
-                        )
+                                fb = check_float(row.get(const_free_balance, 0))
+                                name = row.get(const_about, 'Описания нет')
+                                unit = row.get(const_unit, 'Не указано')
 
-                        fb = check_float(row.get(const_free_balance, 0))
-                        name = row.get(const_about, 'Описания нет')
-                        unit = row.get(const_unit, 'Не указано')
+                                if product:
+                                    product.name = name
+                                    product.parent = parent
+                                    product.free_balance = fb
+                                    product.list_possible_deliveries = possible_deliveries
+                                    product.sum_possible_deliveries = possible_deliveries_sum
+                                    product.unin = unit
 
-                        if product:
-                            product.name = name
-                            product.parent = parent
-                            product.free_balance = fb
-                            product.list_possible_deliveries = possible_deliveries
-                            product.sum_possible_deliveries = possible_deliveries_sum
-                            product.unin = unit
+                                    list_product_to_update.append(product)
 
-                            list_product_to_update.append(product)
+                                else:
 
-                        else:
+                                    new_product = ProductDKCMagadel(
+                                        code=code,
+                                        name=name,
+                                        parent=parent,
+                                        list_possible_deliveries=possible_deliveries,
+                                        sum_possible_deliveries=possible_deliveries_sum,
+                                        free_balance=fb,
+                                        unit=unit
+                                    )
 
-                            new_product = ProductDKCMagadel(
-                                code=code,
-                                name=name,
-                                parent=parent,
-                                list_possible_deliveries=possible_deliveries,
-                                sum_possible_deliveries=possible_deliveries_sum,
-                                free_balance=fb,
-                                unit=unit
-                            )
+                                    list_product_to_create.append(new_product)
 
-                            list_product_to_create.append(new_product)
+                    if list_product_to_update:
+                        ProductDKCMagadel.objects.bulk_update(list_product_to_update, [
+                            'name',
+                            'parent',
+                            'free_balance',
+                            'list_possible_deliveries',
+                            'sum_possible_deliveries',
+                            'unit',
+                        ], batch_size=1000)
 
-            if list_product_to_update:
-                ProductDKCMagadel.objects.bulk_update(list_product_to_update, [
-                    'name',
-                    'parent',
-                    'free_balance',
-                    'list_possible_deliveries',
-                    'sum_possible_deliveries'
-                ], batch_size=1000)
+                    if list_product_to_create:
+                        ProductDKCMagadel.objects.bulk_create(list_product_to_create, batch_size=1000)
 
-            if list_product_to_create:
-                ProductDKCMagadel.objects.bulk_create(list_product_to_create, batch_size=1000)
-
-            maga = Magadel.objects.first()
-            if maga:
-                maga.name = file.name
-            else:
-                maga = Magadel(name=file.name)
-            maga.save()
-
+                    maga = Magadel.objects.first()
+                    if maga:
+                        maga.name = file.name
+                    else:
+                        maga = Magadel(name=file.name)
+                    maga.save()
+    except Exception as e:
+        return f" Ошибка загрузки файла {e}"
