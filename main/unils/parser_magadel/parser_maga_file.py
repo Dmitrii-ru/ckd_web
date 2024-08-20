@@ -128,9 +128,10 @@ def parser_maga_file_func(file):
                     const_free_balance = const['Свободный остаток']
                     const_about = const['Описание']
                     const_unit = const['ЕдИзм']
+                    const_price = const['Цена без НДС, руб']
 
                     columns_possible_deliveries = get_columns_possible_deliveries(df.columns)
-                    print(columns_possible_deliveries)
+
                     for schema_row in schema_rows[header + 1:]:
                         count += 1
                         outline_level = int(schema_row.get('outlineLevel', 0))
@@ -154,7 +155,8 @@ def parser_maga_file_func(file):
                                 fb = check_float(row.get(const_free_balance, 0))
                                 name = row.get(const_about, 'Описания нет')
                                 unit = row.get(const_unit, 'Не указано')
-
+                                price = check_float(row.get(const_price, 0))
+                                print(price)
                                 if product:
                                     product.name = name
                                     product.parent = parent
@@ -162,6 +164,7 @@ def parser_maga_file_func(file):
                                     product.list_possible_deliveries = possible_deliveries
                                     product.sum_possible_deliveries = possible_deliveries_sum
                                     product.unin = unit
+                                    product.price = price
 
                                     list_product_to_update.append(product)
 
@@ -174,7 +177,8 @@ def parser_maga_file_func(file):
                                         list_possible_deliveries=possible_deliveries,
                                         sum_possible_deliveries=possible_deliveries_sum,
                                         free_balance=fb,
-                                        unit=unit
+                                        unit=unit,
+                                        price=price,
                                     )
 
                                     list_product_to_create.append(new_product)
@@ -187,10 +191,11 @@ def parser_maga_file_func(file):
                             'list_possible_deliveries',
                             'sum_possible_deliveries',
                             'unit',
-                        ], batch_size=1000)
+                            'price',
+                        ], batch_size=100)
 
                     if list_product_to_create:
-                        ProductDKCMagadel.objects.bulk_create(list_product_to_create, batch_size=1000)
+                        ProductDKCMagadel.objects.bulk_create(list_product_to_create, batch_size=100)
 
                     maga = Magadel.objects.first()
                     if maga:

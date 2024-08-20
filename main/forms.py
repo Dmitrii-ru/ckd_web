@@ -18,7 +18,6 @@ def validate_columns_df(list_columns, df, sheet_name=None):
                 header = i
                 break
 
-        print(f'"header" = {header}')
         if header is None:
             raise ValidationError(f'Нет нужных колонок {list_columns}')
         return header

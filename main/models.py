@@ -37,6 +37,8 @@ class ProductDKCMagadel(models.Model):
     list_possible_deliveries = models.TextField('Даты возможных поставок', blank=True, null=True)
     sum_possible_deliveries = models.FloatField('Сумма возможных поставок', blank=True, null=True)
     unit = models.CharField('ЕдИзм', max_length=300, null=True, blank=True, default='Не указано')
+    price = models.FloatField('Прайс', default=0)
+
     def __str__(self):
         return f'{self.code} - {self.name}'
 

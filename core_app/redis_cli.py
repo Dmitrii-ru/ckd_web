@@ -9,7 +9,7 @@ from zoneinfo import ZoneInfo
 class RedisClientMain:
 
     def __init__(self):
-        self.time_cache = 100000
+        self.time_cache = 60*60
         self.redis_client = redis.StrictRedis(
             host='localhost',
             port=REDIS_PORT,
@@ -21,7 +21,7 @@ class RedisClientMain:
         self.redis_client.flushdb()
 
     def get_maga(self, model=None):
-        self.redis_client.flushdb()
+
 
         key = 'first_magadel'
         cached_data = self.redis_client.get(key)
@@ -39,7 +39,7 @@ class RedisClientMain:
         return json.loads(cached_data) if cached_data else None
 
     def get_products_parents(self, model_product, model_group):
-        self.redis_client.flushdb()
+
         key_products = 'Products'
         key_groups = 'Groups'
 
@@ -55,7 +55,8 @@ class RedisClientMain:
                     'free_balance': obj.free_balance,
                     'list_possible_deliveries': obj.list_possible_deliveries,
                     'sum_possible_deliveries': obj.sum_possible_deliveries,
-                    'unit': obj.unit
+                    'unit': obj.unit,
+                    'price':obj.price
                 }
                 for obj in products
             }
