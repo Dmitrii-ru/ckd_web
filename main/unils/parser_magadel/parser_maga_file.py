@@ -156,7 +156,7 @@ def parser_maga_file_func(file):
                                 name = row.get(const_about, 'Описания нет')
                                 unit = row.get(const_unit, 'Не указано')
                                 price = check_float(row.get(const_price, 0))
-                                print(price)
+
                                 if product:
                                     product.name = name
                                     product.parent = parent

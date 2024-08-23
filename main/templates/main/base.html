@@ -22,7 +22,9 @@
   <header>
     <div class="text-center" style="background: #3481B8;">
         <span class="shapka">Фанклуб "MAGA"</span>
-                <p>Загруженные данные {{maga.name|default:"Unknown"}}</p>
+                {% if maga %}
+                    <p>Загруженные данные {{maga.name|default:"Unknown"}}</p>
+                 {% endif %}
             <div class="d-flex justify-content-center m-4">
                 <a href="{% url 'main:index'%}" class="btn btn-danger m-1">Главная</a>
             </div>
