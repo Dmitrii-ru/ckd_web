@@ -171,9 +171,11 @@ LOGGING = {
             'filename': '/var/log/django/debug.log',  # Убедитесь, что этот путь существует и доступен
         },
     },
-    'root': {
-        'handlers': ['file'],
-        'level': 'DEBUG',
+    'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
     },
 }
-##
