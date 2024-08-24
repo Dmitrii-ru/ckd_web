@@ -103,11 +103,33 @@ def possible_deliveries_fanc(columns_possible_deliveries, row):
     return list_possible_deliveries_date, summ
 
 
-def parser_maga_file_func(file):
+from django.core.files.storage import default_storage
+
+
+def delete_file(file_instance):
     try:
+        file_path = file_instance.file.name
+
+
+        if default_storage.exists(file_path):
+            default_storage.delete(file_path)
+
+        file_instance.delete()
+    except Exception as e:
+        print(f'Error deleting file: {e}')
+
+
+
+def parser_maga_file_func(file_id):
+    try:
+        file_instance = FileMaga.objects.get(id=file_id)
+        file_ = file_instance.file  # Это объект FieldFile
+        file_path = file_.path  # Путь к файлу
+        file_name = file_.name
+
         with transaction.atomic():
-            df, header = open_df(file)
-            with zipfile.ZipFile(file, 'r') as zip_ref:
+            df, header = open_df(file_path)
+            with zipfile.ZipFile(file_path, 'r') as zip_ref:
                 with zip_ref.open('xl/worksheets/sheet1.xml') as sheet_file:
                     sheet_tree = ET.parse(sheet_file)
                     sheet_root = sheet_tree.getroot()
@@ -199,9 +221,11 @@ def parser_maga_file_func(file):
 
                     maga = Magadel.objects.first()
                     if maga:
-                        maga.name = file.name
+                        maga.name = file_name
                     else:
-                        maga = Magadel(name=file.name)
+                        maga = Magadel(name=file_name)
                     maga.save()
+                    delete_file(file_instance)
     except Exception as e:
+
         return f" Ошибка загрузки файла {e}"

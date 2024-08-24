@@ -45,3 +45,8 @@ class ProductDKCMagadel(models.Model):
     class Meta:
         verbose_name = 'Продукт'
         verbose_name_plural = 'Продукты'
+
+
+class FileMaga(models.Model):
+    name = models.TextField('Имя')
+    file = models.FileField('Файл', upload_to='files/')

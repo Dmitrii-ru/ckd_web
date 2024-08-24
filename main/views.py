@@ -10,23 +10,25 @@ from .unils.find_products_code.const import sheet_name as sheet_name_find_produc
 from .unils.find_products_code.const import const_columns as const_columns_find_products_code
 from django.http import HttpResponse
 from io import BytesIO
-
+from .tasks import parse_maga_file_task
 
 def index(request):
     return render(request, 'main/index.html')
 
 
 def upload_maga(request):
-    form = FileUploadMagaForm()
+
     if request.method == 'POST':
         form = FileUploadMagaForm(request.POST, request.FILES)
         if form.is_valid():
-            result_error = parser_maga_file_func(request.FILES['file'])
+            file_maga = form.save()
+            parse_maga_file_task.delay(file_maga.id)
 
-            if result_error:
-                return render(request, 'main/info.html', context={'massage': result_error})
-            else:
-                return render(request, 'main/info.html', context={'massage': 'Файл успешно загружен'})
+            return render(request, 'main/info.html',
+                          context={'massage': 'Идет загрузка файла, можете покинуть страницу '})
+    else:
+        form = FileUploadMagaForm()
+
 
     return render(
         request, 'main/upload_maga.html',

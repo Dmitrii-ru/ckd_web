@@ -2,6 +2,8 @@ from django import forms
 from django.core.exceptions import ValidationError
 import openpyxl
 
+from main.models import FileMaga
+
 
 def validate_columns_df(list_columns, df, sheet_name=None):
     header = None
@@ -26,8 +28,13 @@ def validate_columns_df(list_columns, df, sheet_name=None):
         raise ValidationError(f'Ошибка при проверки файла {e}')
 
 
-class FileUploadMagaForm(forms.Form):
-    file = forms.FileField()
+
+
+
+class FileUploadMagaForm(forms.ModelForm):
+    class Meta:
+        model = FileMaga
+        fields = ['file']
 
     def clean_file(self):
         from .unils.parser_magadel.const import const, sheet_name
