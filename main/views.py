@@ -22,7 +22,7 @@ def upload_maga(request):
         form = FileUploadMagaForm(request.POST, request.FILES)
         if form.is_valid():
             file_maga = form.save()
-            parse_maga_file_task.delay(file_maga.id)
+            parse_maga_file_task(file_maga)
 
             return render(request, 'main/info.html',
                           context={'massage': 'Идет загрузка файла, можете покинуть страницу '})

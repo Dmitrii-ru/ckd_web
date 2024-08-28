@@ -129,12 +129,14 @@ def parser_maga_file_func(file_id):
 
         with transaction.atomic():
             df, header = open_df(file_path)
+
             with zipfile.ZipFile(file_path, 'r') as zip_ref:
                 with zip_ref.open('xl/worksheets/sheet1.xml') as sheet_file:
                     sheet_tree = ET.parse(sheet_file)
                     sheet_root = sheet_tree.getroot()
                     schema_rows = sheet_root.findall(
-                        './/{http://schemas.openxmlformats.org/spreadsheetml/2006/main}row')
+                        './/{http://schemas.openxmlformats.org/spreadsheetml/2006/main}row'
+                    )
 
                     parent_dict = {}
                     len_df = int(len(df))
@@ -220,6 +222,7 @@ def parser_maga_file_func(file_id):
                         ProductDKCMagadel.objects.bulk_create(list_product_to_create, batch_size=100)
 
                     maga = Magadel.objects.first()
+
                     if maga:
                         maga.name = file_name
                     else:
@@ -227,5 +230,5 @@ def parser_maga_file_func(file_id):
                     maga.save()
                     delete_file(file_instance)
     except Exception as e:
-
+        print(f" Ошибка загрузки файла {e}")
         return f" Ошибка загрузки файла {e}"

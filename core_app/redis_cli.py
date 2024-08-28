@@ -22,21 +22,23 @@ class RedisClientMain:
 
     def get_maga(self, model=None):
 
-
         key = 'first_magadel'
         cached_data = self.redis_client.get(key)
+        try:
+            if not cached_data:
+                obj = model.objects.all().first()
+                if obj:
+                    serialized_data = json.dumps({
+                        'name': obj.name,
+                    }, cls=DjangoJSONEncoder)
 
-        if not cached_data:
-            obj = model.objects.all().first()
-            if obj:
-                serialized_data = json.dumps({
-                    'name': obj.name,
-                }, cls=DjangoJSONEncoder)
+                    self.redis_client.set(key, serialized_data, ex=self.time_cache)
+                    cached_data = serialized_data
 
-                self.redis_client.set(key, serialized_data, ex=self.time_cache)
-                cached_data = serialized_data
-        # Возвращаем десериализованные данные из кэша
-        return json.loads(cached_data) if cached_data else None
+
+            return json.loads(cached_data) if cached_data else None
+        except:
+            return None
 
     def get_products_parents(self, model_product, model_group):
 
@@ -65,6 +67,7 @@ class RedisClientMain:
             cached_products = serialized_products
 
         if not cached_groups:
+            self.clean_db()
             groups = model_group.objects.all()
 
             db_groups_dict = {

@@ -17,6 +17,7 @@ def validate_columns_df(list_columns, df, sheet_name=None):
 
         for i, row in enumerate(workbook.iter_rows(values_only=True)):
             if list_columns_set.issubset(set(row)):
+
                 header = i
                 break
 

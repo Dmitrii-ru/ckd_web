@@ -85,7 +85,7 @@ def sum_price_product(price,quantity,sum_product):
     except:
         return 0
 
-def update_values_object(object, df, index_row, quantity,sum_product):
+def update_values_object(object, df, index_row, quantity,sum_product,maga_name):
     free_balance = object.get('free_balance', 0)
     sum_possible_deliveries = object.get('sum_possible_deliveries', 0)
     list_possible_deliveries = object.get('list_possible_deliveries', 'Нет значения')
@@ -105,6 +105,9 @@ def update_values_object(object, df, index_row, quantity,sum_product):
     df.at[index_row,  new_columns_dict['Прайс без НДС']] =price
     sp,sum_product = sum_price_product(price,quantity,sum_product)
     df.at[index_row,  new_columns_dict['Итого без НДС']] = sp
+    df.at[index_row, new_columns_dict['V']] = maga_name
+     
+
     return sum_product
 
 def create_new_def(df,file):
@@ -131,11 +134,21 @@ def create_new_def(df,file):
 
     return df
 
+def get_maga_name(rm):
+    try:
+        maga_name = rm.get_maga(Magadel)
+
+        return maga_name['name']
+    except:
+        return 'Нет данных'
+
+
 def find_products(file):
     df, header = open_df(file)
     rm = RedisClientMain()
     products, groups = rm.get_products_parents(model_product=ProductDKCMagadel, model_group=GroupProductDKCMagadel)
 
+    maga_name = get_maga_name(rm)
     df = create_new_def(df,file)
 
 
@@ -163,7 +176,7 @@ def find_products(file):
             if product:
 
                 quantity = get_float(row.get('Кол'))
-                sum_product = update_values_object(product, df, index_row, quantity,sum_product)
+                sum_product = update_values_object(product, df, index_row, quantity,sum_product,maga_name)
                 group = product.get('parent')
                 if group:
                     get_level_groups(level_group_columns_name, group, df, index_row)

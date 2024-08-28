@@ -12,6 +12,7 @@ class Magadel(models.Model):
     class Meta:
         verbose_name = 'Магадель'
         verbose_name_plural = 'Магадель'
+
     def __str__(self):
         return f'{self.name} - {self.created_at} - {self.updated_at}'
 
