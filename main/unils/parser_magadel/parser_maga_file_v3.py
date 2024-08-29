@@ -4,6 +4,8 @@ import openpyxl
 import zipfile
 import xml.etree.ElementTree as ET
 import pandas as pd
+
+from core_app.redis_cli import RedisClientMain
 from main.forms import validate_columns_df
 from main.models import GroupProductDKCMagadel, ProductDKCMagadel, Magadel
 from main.unils.parser_magadel.const import sheet_name, const, parent_split
@@ -215,6 +217,9 @@ class ExcelParser:
             db_maga = Magadel(name=file_name)
         db_maga.save()
         self.delete_file(self.maga)
+        redis_client = RedisClientMain()
+        redis_client.clean_db()
         print('end')
+
 
 

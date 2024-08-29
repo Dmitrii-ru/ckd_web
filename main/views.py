@@ -46,6 +46,7 @@ def find_products_code(request):
         form = FileUploadFindProductsCode(request.POST, request.FILES)
         if form.is_valid():
             try:
+
                 output, name = find_products_code_func(request.FILES['file'])
 
                 from urllib.parse import quote

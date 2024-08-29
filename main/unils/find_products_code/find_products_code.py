@@ -71,9 +71,8 @@ def get_level_groups(level_group_columns_name, group, df, i):
 
 def get_float(x):
     try:
-
         return float(x)
-    except:
+    except ValueError:
         return 0
 
 def sum_price_product(price,quantity,sum_product):
@@ -99,14 +98,14 @@ def update_values_object(object, df, index_row, quantity,sum_product,maga_name):
     df.at[index_row,  new_columns_dict['Свободный остаток - Кол']] = free_balance - request_quantity
     df.at[index_row,  new_columns_dict['Свободные поступления']] = sum_possible_deliveries
     df.at[index_row,  new_columns_dict['Свободный остаток - Свободные поступления - Кол']] = sum_possible_deliveries_free_balance
-    df.at[index_row,  new_columns_dict['Информация о поступлениях']] = '\n'.join(list_possible_deliveries.split(','))
+    df.at[index_row,  new_columns_dict['Информация о поступлениях']] = '\n, '.join(list_possible_deliveries.split(','))
     df.at[index_row,  new_columns_dict['Описание']] = name
     df.at[index_row,  new_columns_dict['ЕдИзм']] = unit
     df.at[index_row,  new_columns_dict['Прайс без НДС']] =price
     sp,sum_product = sum_price_product(price,quantity,sum_product)
     df.at[index_row,  new_columns_dict['Итого без НДС']] = sp
     df.at[index_row, new_columns_dict['V']] = maga_name
-     
+
 
     return sum_product
 
@@ -125,7 +124,9 @@ def create_new_def(df,file):
                     const_columns['Кол']: count_code
                 }
 
+
     list_prod = list(dict_prod.values())
+
     df = pd.DataFrame(list_prod)
 
     # Запись DataFrame в указанный лист Excel-файла
@@ -167,7 +168,7 @@ def find_products(file):
 
     for index_row, row in df.iterrows():
         last_index=index_row
-        product_code = row.get('Код')
+        product_code = row.get(const_columns['Код'])
 
 
         if product_code:
@@ -175,8 +176,9 @@ def find_products(file):
 
             if product:
 
-                quantity = get_float(row.get('Кол'))
+                quantity = get_float(row.get(const_columns['Кол']))
                 sum_product = update_values_object(product, df, index_row, quantity,sum_product,maga_name)
+
                 group = product.get('parent')
                 if group:
                     get_level_groups(level_group_columns_name, group, df, index_row)
@@ -218,5 +220,4 @@ def find_products(file):
 
 def find_products_code_func(file):
     output, file.name = find_products(file)
-
     return output, file.name
