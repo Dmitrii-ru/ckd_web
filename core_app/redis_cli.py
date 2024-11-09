@@ -4,16 +4,20 @@ import redis
 from .settings import REDIS_DB_CKD, REDIS_PORT, TIME_ZONE
 from django.core.serializers.json import DjangoJSONEncoder
 from zoneinfo import ZoneInfo
-
+from typing import Dict, Any
 
 class RedisClientMain:
 
-    def __init__(self):
-        self.time_cache = 60*60
+    def __init__(
+            self,
+            time_cache=60*60,
+            db = REDIS_DB_CKD
+    ):
+        self.time_cache = time_cache
         self.redis_client = redis.StrictRedis(
             host='localhost',
             port=REDIS_PORT,
-            db=REDIS_DB_CKD,
+            db=db,
             decode_responses=True
         )
 
@@ -85,3 +89,24 @@ class RedisClientMain:
             json.loads(cached_products) if cached_products else None,
             json.loads(cached_groups) if cached_groups else None
         )
+
+    def get_key_values(
+            self,
+            key_name:str,
+    ) -> Dict[str, Any]:
+
+        data = self.redis_client.get(key_name)
+        if data:
+            deserialized_data = json.loads(data)
+            return deserialized_data
+
+
+    def create_key(
+            self,
+            key_name: str,
+            data:Dict[str,Any]
+    ) -> Dict[str, Any]:
+        
+        serialized_groups = json.dumps(data, cls=DjangoJSONEncoder)
+        self.redis_client.set(key_name, serialized_groups, ex=self.time_cache)
+        return data

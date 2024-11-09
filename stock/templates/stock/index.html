@@ -1,0 +1,24 @@
+{% extends 'base_app/base.html' %}
+{% load static %}
+  <title>
+        {% block title %} Биржа {% endblock %}
+  </title>
+
+{%block context%}
+    <div class="d-flex flex-row flex-wrap bd-highlight mb-3">
+        {% if rates %}
+            {% for key, value in rates.rates.items %}
+                <a href="" class="btn btn-dark m-1">
+                        {{ key }}
+                        ({{value.Name}})
+                        {{value.Dynamics}}
+                        {{value.DynamicsMarker}}
+                    ₽
+                </a>
+
+            {% endfor %}
+        {% else %}
+            <p>Нет данных о курсах валют.</p>
+        {% endif %}
+    </div>
+{%endblock%}

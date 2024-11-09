@@ -1,0 +1,14 @@
+{% extends 'base_app/base.html' %}
+{% load static %}
+
+
+{%block context%}
+  <title>
+        {% block title %} ZAEK {% endblock %}
+  </title>
+<div class="d-flex justify-content-center">
+<div class="d-flex justify-content-center m-1">
+                <a href="{% url 'zaek:get_price'%}" class="btn btn-danger m-1">каталог</a>
+        </div>
+</div>
+{%endblock%}

@@ -1,0 +1,2 @@
+time_cache_rates=2
+redis_db_rates=2

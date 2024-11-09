@@ -5,8 +5,14 @@ from core_app import settings
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('main.urls', namespace='main'))
+    path('', include('base_app.urls', namespace='base_app')),
+    path('ckd', include('ckd.urls', namespace='ckd')),
+    path('zaek', include('zaek.urls', namespace='zaek')),
+    path('stock', include('stock.urls', namespace='stock')),
 ]
+
+
+
 if settings.DEBUG:
     import debug_toolbar
     urlpatterns = [

@@ -26,4 +26,4 @@ env/
 
 # MacOS files
 .DS_Store
-main/migrations
+ckd/migrations

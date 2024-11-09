@@ -27,7 +27,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'main',
+    'ckd',
+    'zaek',
+    'stock',
+    'base_app',
+
 ]
 
 INSTALLED_APPS += [
@@ -66,7 +70,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'main.context_processors.add_maga_to_context',
+                'ckd.context_processors.add_maga_to_context',
             ],
         },
     },
