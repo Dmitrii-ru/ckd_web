@@ -4,13 +4,13 @@ import openpyxl
 from django.db import transaction
 from decimal import Decimal
 from zaek.models import Product
-from zaek.utils.parser_price.consts_zaek import base_columns, attrs_update_products, other_consts, split_parent_base, \
+from zaek.consts_zaek import base_columns, attrs_update_products, other_consts, split_parent_base, \
     split_parent_obj
 from zaek.utils.parser_price.parser_price_dist import parser_price_dist
 from zaek.utils.parser_price.test import all_products
 
 xls_file = 'keaz.xls'
-xlsx_file = '/home/dima/Python/django/ckd_web/zaek/utils/parser_price/keaz.xlsx'
+xlsx_file = '/home/dim/PycharmProjects/ckd_web/zaek/utils/parser_price/keaz.xlsx'
 import xlrd
 from openpyxl import Workbook
 
@@ -18,16 +18,6 @@ from openpyxl import Workbook
 
 
 
-# def find_category(value):
-#     cat = None
-#     for category, products in all_products.items():
-#         for product in products:
-#             if product in value:
-#                 cat = category
-#                 print(f'{category} - {value}')
-#
-#
-#     print(f'{cat} - {value}')
 
 
 class ParserPrice:
@@ -219,7 +209,6 @@ class DataPrice(ParserPrice):
         sorted_tree = sorted(self.parent_tree.items())
         hierarchy = [f"{level}{split_parent_obj}{parent}" for level, parent in sorted_tree]
         parent_tree_str = f"{split_parent_base}".join(hierarchy)
-        print(parent_tree_str, 'parent_tree_str')  # Для отладки можно вывести результат
         return parent_tree_str
 
 

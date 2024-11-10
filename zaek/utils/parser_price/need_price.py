@@ -1,42 +1,13 @@
 import os
 import openpyxl
 from zaek.models import Product
-from zaek.utils.parser_price.consts_zaek import attrs_update_products, split_parent_base, split_parent_obj
+from zaek.consts_zaek import attrs_update_products, split_parent_base, split_parent_obj, custom_price_name
 import pandas as pd
-
-# def get_object_attrs(objects_model):
-#     objects_list = []
-#
-#
-#     for attr in attrs_update:
-#
-#         value = getattr(objects_model, attr, None)
-#         key = objects_model._meta.get_field(f'{attr}').verbose_name
-#
-#
-#
-#
-#
-#
-#
-# def need_price_func():
-#     objects_all = Product.objects.all()
-#
-#     columns = [] + attrs_update
-#
-#
-#
-#     df = pd.DataFrame(columns=columns)
-#
-#
-#     df.to_excel("output.xlsx", index=False)
-#     print("Файл 'output.xlsx' создан с колонками:", columns)
-#
-#     for obj in objects_all:
-#         get_object_attrs(obj)
-#     return
-
-
+import io
+from django.core.files.base import ContentFile
+from zaek.models import ZaekPrice
+from django.utils import timezone
+from base_app.utils.errors_plase import create_error
 
 
 class CreatePriceExcel:
@@ -44,9 +15,11 @@ class CreatePriceExcel:
     def __init__(
             self,
             model = Product,
-            attrs_update = attrs_update_products
+            attrs_update = attrs_update_products,
+            custom_price_name = custom_price_name
 
     ):
+        self.custom_price_name = custom_price_name
         self.model = model
         self.attrs_update = attrs_update
         self.level_columns = {}
@@ -67,6 +40,7 @@ class CreatePriceExcel:
             'Продуктовый портфель', 'Норма упаковки', 'Номенклатурная группа',
             'Ценовая группа','Ценовая группа сводная'
         ]
+        self.price = None
 
 
     def get_level_value(self,value):
@@ -93,6 +67,7 @@ class CreatePriceExcel:
 
 
     def get_product_all(self):
+
         self.list_ready_ty_excel = []
         objects_all = self.model.objects.all()
         for obj in objects_all:
@@ -101,19 +76,78 @@ class CreatePriceExcel:
             self.list_ready_ty_excel.append(self.new_object)
             self.new_object = {}
         self.write_to_excel()
+        return self.price
 
-    def write_to_excel(self, output_file="1.xlsx", sheet_name="Sheet1"):
-        if not output_file.endswith(".xlsx"):
-            output_file += ".xlsx"
+    def write_to_excel(self):
         sorted_columns = [self.level_columns[key] for key in sorted(self.level_columns.keys())]
         all_columns = self.columns_1 + sorted_columns + self.columns_2
-        df = pd.DataFrame(self.list_ready_ty_excel, columns=all_columns)
-        df = df.fillna('')
+
+        # Создаем DataFrame из list_ready_ty_excel с заданными колонками
         try:
-            if os.path.exists(output_file):
-                os.remove(output_file)
-            with pd.ExcelWriter(output_file, engine='xlsxwriter') as writer:
-                df.to_excel(writer, sheet_name=sheet_name, index=False)
-                print(f"Файл '{output_file}' успешно создан на листе '{sheet_name}'")
+            df = pd.DataFrame(self.list_ready_ty_excel, columns=all_columns)
+            df = df.fillna('')  # Заполняем пустые значения, чтобы избежать ошибок при записи в Excel
         except Exception as e:
-            print("Ошибка записи в Excel:", e)
+            create_error(
+                name='CreatePriceExcel.write_to_excel',
+                path=os.path.abspath(__file__),
+                error=e
+            )
+
+            return
+
+        # Создаем буфер для временного хранения файла
+        output_buffer = io.BytesIO()
+
+        try:
+            # Пишем DataFrame в буфер
+            with pd.ExcelWriter(output_buffer, engine='xlsxwriter') as writer:
+                df.to_excel(writer, sheet_name=self.custom_price_name, index=False)
+            output_buffer.seek(0)  # Перемещаем указатель в начало буфера
+
+            # Создаем или получаем объект ZaekPrice
+            zaek_price, created = ZaekPrice.objects.get_or_create(
+                name=self.custom_price_name,
+                defaults={'created_at': timezone.now()}
+            )
+
+            # Проверяем наличие старого файла, и если есть - удаляем его
+            if zaek_price.file:
+                zaek_price.file.delete(save=False)  # Удаляем старый файл, если он существует
+
+            # Сохраняем новый файл в поле 'file' модели ZaekPrice
+            file_content = ContentFile(output_buffer.getvalue())
+            zaek_price.file.save(f"{self.custom_price_name}.xlsx", file_content, save=False)
+
+            # Сохраняем объект с новым файлом
+            zaek_price.save()
+
+        except Exception as e:
+            create_error(
+                name = 'CreatePriceExcel.write_to_excel',
+                path = os.path.abspath(__file__),
+                error = e
+            )
+
+
+
+
+
+def need_price_func():
+
+    try:
+        price = ZaekPrice.objects.get(name=custom_price_name)
+    except :
+
+        try:
+
+            cl = CreatePriceExcel()
+            price =cl.get_product_all()
+        except Exception as e:
+
+            create_error(
+                name = 'need_price_func',
+                path = os.path.abspath(__file__),
+                error = e
+            )
+            price =None
+    return price , custom_price_name

@@ -2,12 +2,17 @@
 
 import pandas as pd
 
-from zaek.utils.parser_price.consts_zaek import exception_values, extra_values
+from zaek.consts_zaek import exception_values, extra_values
 
-file_path = '/home/dima/Python/django/ckd_web/zaek/utils/parser_price/628607_utf8.csv'
+file_path = '/home/dim/PycharmProjects/ckd_web/zaek/utils/parser_price/628607_utf8.csv'
 
 def parser_price_dist():
-    df = pd.read_csv(file_path, delimiter=';', encoding='utf8')
+    import chardet
+    with open(file_path, 'rb') as f:
+        result = chardet.detect(f.read())
+    encoding = result['encoding']
+
+    df = pd.read_csv(file_path, delimiter=';', encoding=encoding)
     dict_product_groups ={}
     for i ,row in df.iterrows():
         if row['Артикул']:

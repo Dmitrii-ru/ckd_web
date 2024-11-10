@@ -1,0 +1,53 @@
+{% extends 'base_app/base.html' %}
+{% load static %}
+
+
+{%block context%}
+
+
+    <h1>Информация о продукте</h1>
+
+    <!-- Ввод ID продукта -->
+    <input type="number" id="product-id" placeholder="Введите ID продукта">
+
+    <!-- Кнопка для отправки запроса -->
+    <button id="get-product-info">Получить информацию о продукте</button>
+
+    <h2>Результат:</h2>
+    <div id="product-info">
+        <!-- Информация о продукте будет отображена здесь -->
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            $('#get-product-info').click(function() {
+                var productId = $('#product-id').val();  // Получаем введённый ID продукта
+
+                if (productId) {
+                    // Отправляем AJAX-запрос
+                    $.ajax({
+                        url: '/product/' + productId + '/',  // URL нашего API
+                        method: 'GET',
+                        success: function(response) {
+                            // Если запрос успешен, отображаем данные о продукте
+                            $('#product-info').html(`
+                                <p>Название: ${response.name}</p>
+                                <p>Цена: ${response.price}</p>
+                                <p>Описание: ${response.description}</p>
+                            `);
+                        },
+                        error: function(xhr, status, error) {
+                            // Если ошибка, отображаем сообщение об ошибке
+                            $('#product-info').html(`<p style="color: red;">${xhr.responseJSON.error}</p>`);
+                        }
+                    });
+                } else {
+                    alert('Пожалуйста, введите ID продукта!');
+                }
+            });
+        });
+    </script>
+
+
+
+{%endblock%}

@@ -38,3 +38,4 @@ extra_values =['Комплекты зажимов' , 'Аксессуары']
 
 split_parent_base = '//*//'
 split_parent_obj = '-'
+custom_price_name = 'Кастомизированный прайс'

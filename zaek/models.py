@@ -1,25 +1,6 @@
 from django.db import models
 from django.utils import timezone
 
-# class PriceGroup(models.Model):
-#     # Поле для хранения ссылки на родителя
-#     parent = models.ForeignKey(
-#         'self',  # Ссылка на саму модель
-#         on_delete=models.CASCADE,  # Удаление родителя приводит к удалению всех его детей
-#         null=True,  # У родителя может не быть родителя
-#         blank=True,  # Поле может быть пустым
-#         related_name='group'  # Имя для обратной связи (children) у родителя
-#     )
-#
-#     name = models.CharField(max_length=100)  # Пример поля для имени родителя
-#     level = models.IntegerField(blank=False,null=False,default=0)
-#     # Другие поля для информации о родителе могут быть добавлены здесь
-#
-#     def __str__(self):
-#         parent_str = f", parent== {self.parent.name}" if self.parent else ""
-#         return f'{"-" * self.level,self.level} {self.name} {parent_str}'
-
-
 class Product(models.Model):
 
     price_group_list = models.TextField(
@@ -158,7 +139,8 @@ class Product(models.Model):
 
 
 class ZaekPrice(models.Model):
-    file = models.FileField('Файл',upload_to='files/' , max_length=300, null=False, blank=False)
+    name = models.CharField('Название', max_length=100, unique=True, null=False, blank=False, default='Прайс')  # Добавили поле name
+    file = models.FileField('Файл', upload_to='files/', max_length=300, null=False, blank=False)
     created_at = models.DateTimeField('Дата создания', default=timezone.now)
     updated_at = models.DateTimeField('Дата обновления', auto_now=True)
 
