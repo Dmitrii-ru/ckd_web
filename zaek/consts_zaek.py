@@ -33,9 +33,14 @@ other_consts= {
     'not_data' : 'Нет данных'
 }
 
+
 exception_values = ['ВА57','ВА57Ф','ВА51','ВА04']
 extra_values =['Комплекты зажимов' , 'Аксессуары']
 
+price_groups = 'Прайс с группами товаров'
+delimiter_price_csv = ';'
+zaek_sheet = 'TDSheet'
 split_parent_base = '//*//'
 split_parent_obj = '-'
 custom_price_name = 'Кастомизированный прайс'
+price_name = 'keaz'

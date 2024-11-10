@@ -7,7 +7,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('base_app.urls', namespace='base_app')),
     path('ckd', include('ckd.urls', namespace='ckd')),
-    path('zaek', include('zaek.urls', namespace='zaek')),
+    path('zaek/', include('zaek.urls', namespace='zaek')),
     path('stock', include('stock.urls', namespace='stock')),
 ]
 

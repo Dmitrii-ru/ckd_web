@@ -30,14 +30,32 @@ from zaek.models import ZaekPrice
 
 
 
-class FileUploadZeakForm(forms.ModelForm):
-    class Meta:
-        model = ZaekPrice
-        fields = ['file']
+class PriceLoadZaekForm(forms.Form):
+
+    file = forms.FileField(
+        label='Файл',
+        required=True
+    )
+
     def clean_file(self):
         file = self.cleaned_data['file']
         if not file:
             raise ValidationError('Вы ничего не загрузили')
         if not str(file).endswith('.xlsx'):
+            raise ValidationError('Формат должен быть .xlsx')
+        return file
+
+class PriceLoadZaekGroupsForm(forms.Form):
+
+    file = forms.FileField(
+        label='Файл',
+        required=True
+    )
+
+    def clean_file(self):
+        file = self.cleaned_data['file']
+        if not file:
+            raise ValidationError('Вы ничего не загрузили')
+        if not str(file).endswith('.csv'):
             raise ValidationError('Формат должен быть .xlsx')
         return file

@@ -1,13 +1,14 @@
 import os
 import openpyxl
-from zaek.models import Product
+from zaek.models import Product, ZaekPrice
 from zaek.consts_zaek import attrs_update_products, split_parent_base, split_parent_obj, custom_price_name
 import pandas as pd
 import io
 from django.core.files.base import ContentFile
-from zaek.models import ZaekPrice
+
 from django.utils import timezone
 from base_app.utils.errors_plase import create_error
+from zaek.tasks import need_price_task
 
 
 class CreatePriceExcel:
@@ -27,13 +28,14 @@ class CreatePriceExcel:
         self.new_object = {}
         self.list_ready_ty_excel =[]
         self.columns_1 = [
-            'Артикул', 'Номенклатура', 'Ед.',
+            'Артикул', 'Номенклатура',
             'Цена (без НДС) руб.', 'Цена (с НДС) руб.',
             'Классификация ПП'
 
 
         ]
         self.columns_2 = [
+            'Ед.',
             'Рекоменд. оптовая цена (без НДС) руб.', 'Рекоменд. оптовая цена (с НДС) руб.',
             'Рекоменд. розничная цена (без НДС) руб.', 'Рекоменд. розничная цена (с НДС) руб.',
             'Складской статус в Курске', 'Объем куб.м', 'Вес (кг)',
@@ -120,6 +122,7 @@ class CreatePriceExcel:
 
             # Сохраняем объект с новым файлом
             zaek_price.save()
+            self.price = zaek_price
 
         except Exception as e:
             create_error(
@@ -131,23 +134,11 @@ class CreatePriceExcel:
 
 
 
-
 def need_price_func():
-
+    from django.core.exceptions import ObjectDoesNotExist
+    price = None
     try:
         price = ZaekPrice.objects.get(name=custom_price_name)
-    except :
-
-        try:
-
-            cl = CreatePriceExcel()
-            price =cl.get_product_all()
-        except Exception as e:
-
-            create_error(
-                name = 'need_price_func',
-                path = os.path.abspath(__file__),
-                error = e
-            )
-            price =None
+    except ObjectDoesNotExist:
+        need_price_task.delay()
     return price , custom_price_name

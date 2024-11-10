@@ -4,11 +4,9 @@ from celery import shared_task
 
 from base_app.utils.errors_plase import create_error
 from core_app.redis_cli import RedisClientMain
-from zaek.consts_zaek import custom_price_name
 from zaek.models import ZaekPrice
-from ckd.unils.parser_magadel.parser_maga_file import parser_maga_file_func
 from ckd.unils.parser_magadel.parser_maga_file_v3 import ExcelParser
-from zaek.utils.parser_price.need_price import CreatePriceExcel
+
 
 
 @shared_task
@@ -19,19 +17,31 @@ def parse_price_zeak_file_task(odj_pk):
     ExcelParser(price).parse()
 
 
-@shared_task(bind=True)
-def need_price_task(self):
+@shared_task
+def need_price_task():
     try:
-        price = ZaekPrice.objects.get(name=custom_price_name)
-    except ZaekPrice.DoesNotExist:
-        try:
-            cl = CreatePriceExcel()
-            price = cl.get_product_all()
-        except Exception as e:
-            create_error(
-                name='need_price_func',
-                path=os.path.abspath(__file__),
-                error=e
-            )
-            price = None
-    return price, custom_price_name
+        from zaek.utils.parser_price.need_price import CreatePriceExcel
+        cl = CreatePriceExcel()
+        cl.get_product_all()
+    except Exception as e:
+        create_error(
+            name='need_price_task',
+            path=os.path.abspath(__file__),
+            error=e
+        )
+
+
+@shared_task
+def get_price_task(price_path):
+    try:
+        from zaek.utils.parser_price.parser_price import DataPrice
+        data = DataPrice(price_path=price_path)
+        data.get_price()
+    except Exception as e:
+        create_error(
+            name='get_price_task',
+            path=os.path.abspath(__file__),
+            error=e
+        )
+
+

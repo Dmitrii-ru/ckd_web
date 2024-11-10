@@ -8,10 +8,11 @@
   </title>
 <div class="d-flex justify-content-center">
         <div class="d-flex justify-content-center m-1">
-                <a href="{% url 'zaek:price_menu_load'%}" class="btn btn-danger m-1">Загрузить данные {{price_name}}</a>
+                <a href="{% url 'zaek:get_price'%}" class="btn btn-danger m-1">Загрузить прайс {{price_name}}</a>
         </div>
         <div class="d-flex justify-content-center m-1">
-                <a href="{% url 'zaek:need_price'%}" class="btn btn-danger m-1">Получить {{custom_price_name}}</a>
+                <a href="{% url 'zaek:get_price_groups'%}" class="btn btn-danger m-1">Загрузить прайс {{price_groups}}</a>
         </div>
+
 </div>
 {%endblock%}
