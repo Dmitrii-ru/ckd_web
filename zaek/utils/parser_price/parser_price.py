@@ -27,14 +27,15 @@ class ParserPrice:
                 text = ''.join(node.text or '' for node in
                                si.findall('.//{http://schemas.openxmlformats.org/spreadsheetml/2006/main}t'))
                 shared_strings.append(text)
+        print('load_shared_strings')
         return shared_strings
+
 
     def open_file(self):
         d = []
-        with zipfile.ZipFile(self.price_path, 'r') as zip_ref:
-            # Вызываем функцию load_shared_strings, чтобы получить список строк
-            shared_strings = self.load_shared_strings(zip_ref)
 
+        with zipfile.ZipFile(self.price_path, 'r') as zip_ref:
+            shared_strings = self.load_shared_strings(zip_ref)
             with zip_ref.open('xl/worksheets/sheet1.xml') as sheet_file:
                 sheet_tree = ET.parse(sheet_file)
                 sheet_root = sheet_tree.getroot()
@@ -70,6 +71,7 @@ class ParserPrice:
                         row_data = dict(zip(self.header, row_data))
                         row_data['outline_level']=outline_level
                         d.append(row_data)
+        print('open_file')
         return d
 
 
@@ -227,7 +229,7 @@ class DataPrice(ParserPrice):
 
 
 
-
+        print('get_price')
         self.bulk_update_or_create_products()
 
     def bulk_update_or_create_products(self):
