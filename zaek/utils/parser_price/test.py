@@ -1,49 +1,37 @@
-distributor_products_keaz_optima = [
-    "OptiBox P", "OptiDin BM125", "OptiDin BM63 (6кА и 4,5 кА)", "OptiDin BM63 DC",
-    "OptiDin BM63-OT", "OptiDin D63 (6кА и 4,5 кА)", "OptiDin OM УЗИП",
-    "OptiDin OM УЗИП (заказные)", "OptiDin SL63 Лампы сигнальные", "OptiDin VD63",
-    "OptiDin ZM Звонки модульные", "OptiDin Аксессуары", "OptiDin КМ63 Кнопки модульные",
-    "OptiDin РА10", "OptiDin Реле модульные", "OptiDin DM63", "OptiDin MK100",
-    "OptiDin BM63PL", "OptiStart LC1E", "OptiStart ME", "OptiStart K", "OptiStart MP",
-    "OptiFuse", "OptiMat D", "OptiMat D Аксессуары", "OptiMat E Аксессуары",
-    "OptiMat E100", "OptiMat E250", "Optiswitch 4G", "Optiswitch DI", "OptiKit",
-    "OptiRel G", "OptiRel D", "OptiSignal", "OptiSensor LS", "OptiCor",
-    "OptiPower DR", "OptiPower MDR", "OptiPower LRS", "OptiClip", "OptiLogic L",
-    "OptiLogic M", "OptiLogic S"
+from openpyxl import Workbook
+from openpyxl.utils import get_column_letter
+
+# Данные
+data = [
+    {'Артикул': '344592', 'Цена (без НДС) руб.': 6700.00, 'СЩО  3 - х Золотой': 0.04, 'Пенис': 0.04},
+    {'Артикул': '285971', 'Цена (без НДС) руб.': 384.00, 'СЩО  3 - х Золотой': 0.04, 'Пенис': 0.04},
 ]
 
-distributor_products_keaz = [
-    "КПВ", "КТПВ", "ВНК", "ЗБ Замки", "КЭЗ Ключи", "ПКТ", "Разъединители высоковольтные",
-    "А63", "АВДТ32", "АД", "АЕ20", "АЕ20М", "Аксессуары выключателей",
-    "Аксессуары предохранителей", "АП50Б", "ВА04-36", "ВА13", "ВА21", "ВА47-100",
-    "ВА47-29", "ВА47 Аксессуары для модульных выключателей", "ВА51-35", "ВА51-39",
-    "ВА57-31", "ВА57-35", "ВА57-35 Ф", "ВА57-39", "ВА57Ф31", "ВД1-63", "ВН-32",
-    "ВР-32", "ВР-32 (заказные)", "ВР-32ф", "Выключатели путевые", "ИТТ",
-    "КИП Коробки испытательные переходные", "Комплекты зажимов", "Корпуса НКУ - металл",
-    "КТ6000", "КТ6000 Аксессуары", "НПН2", "ПАР", "Контакторы КМ", "ПМ12 Контакторы",
-    "ПМ12 Пускатели", "ПМЛ Аксессуары", "ПМЛ Аксессуары (заказные)", "ПМЛ Контакторы",
-    "ПМЛ Контакторы (заказные)", "ПМЛ Пускатели", "ПМЛ Пускатели (заказные)",
-    "ПРК Пускатели", "ПН2", "ПН2 Аксессуары", "ППН", "ППН Аксессуары",
-    "ППН Аксессуары покупные", "ППН Х3", "Разъемы силовые", "РЕ19", "РЕ19 Аксессуары",
-    "РП Рубильники", "РТЛ Реле", "РТЛ Реле (заказные)", "Светосигнальные индикаторы",
-    "Средства монтажа, аксессуары НКУ", "Устройства подачи команд и сигналов",
-    "ЯРП Ящики силовые", "ВА50 Аксессуары", "ВА53-41", "ВА53-43", "ВА55-41",
-    "ВА55-43", "ПП 57", "ПП60С", "ПНБ5", "ПНБ7", "KEAZ-Ferraz",
-    "Продукты вне канала распределения", "АК50Б", "АК50КБ", "АК50КБ-Д",
-    "АК50КБ РЕГ"
-]
+# Создаем новый Excel файл
+wb = Workbook()
+ws = wb.active
+ws.title = "Данные"
 
-project_products_keaz_optima = [
-    "OptiMat A", "OptiBox G", "OptiMat ВВ", "OptiBox M", "Ретрофит (Оптимат А, Д, ВА50)",
-    "OptiBlock", "OptiVert", "OptiSave"
-]
-exceptions_BA = [
-    'ВА57', 'ВА57Ф','ВА51','ВА04'
-]
+# Заголовки
+headers = list(data[0].keys())
+headers += ['СЩО  3 - х Золотой - Цена (без НДС) руб.', 'Пенис - Цена (без НДС) руб.']
+ws.append(headers)
 
-all_products = {
-    "Дистрибуторские продукты KEAZ-Optima": distributor_products_keaz_optima,
-    "Дистрибуторские продукты КЭАЗ": distributor_products_keaz,
-    "Проектные продукты KEAZ-Optima": project_products_keaz_optima
-}
+# Заполнение данных и добавление формул
+for row_idx, item in enumerate(data, start=2):  # Нумерация строк с 2, так как 1 строка - заголовки
+    ws[f"A{row_idx}"] = item['Артикул']
+    ws[f"B{row_idx}"] = item['Цена (без НДС) руб.']
+    ws[f"C{row_idx}"] = item['СЩО  3 - х Золотой']
+    ws[f"D{row_idx}"] = item['Пенис']
 
+    # Формулы для новых колонок
+    ws[f"E{row_idx}"] = f"=B{row_idx} * (1 - C{row_idx})"  # СЩО 3 - х Золотой
+    ws[f"F{row_idx}"] = f"=B{row_idx} * (1 - D{row_idx})"  # Пенис
+
+# Устанавливаем ширину колонок для удобства
+for col_idx, header in enumerate(headers, start=1):
+    ws.column_dimensions[get_column_letter(col_idx)].width = 25
+
+# Сохраняем файл
+wb.save("/home/dima/Python/django/ckd_web/zaek/utils/parser_price/v.xlsx")
+print("Файл успешно создан: dynamic_columns.xlsx")

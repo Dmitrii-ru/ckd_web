@@ -1,11 +1,19 @@
+from os import pwrite
+
 from django.http import HttpResponse
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
+from urllib3.filepost import writer
+
 from .consts_zaek import base_columns, zaek_sheet, custom_price_name, price_name, price_groups, delimiter_price_csv
-from .forms import PriceLoadZaekForm,PriceLoadZaekGroupsForm
+from .forms import PriceLoadZaekForm, PriceLoadZaekGroupsForm, ConsolidatedTableForm
 from zaek.utils.parser_price.need_price import need_price_func
-from .models import ZaekPrice
+from .models import ZaekPrice, Instruction, InstructionStep
 from django.utils import timezone
 from .tasks import get_price_task
+from django.views.generic import ListView, DetailView
+
+from .utils.parser_price.consolidated_table import find_consolidated_table
+from .utils.parser_price.find_objects_in_load_excel import find_objects_in_load_excel
 
 
 def index(request):
@@ -27,6 +35,17 @@ def price_menu_load(request):
             'price_name': price_name.lower(),
         },
         template_name='zaek/price_menu_load.html'
+    )
+
+
+def data_menu_processing(request):
+    return render(
+        request,
+        context={
+            'custom_price_name': custom_price_name.lower(),
+
+        },
+        template_name='zaek/data_menu_processing.html'
     )
 
 
@@ -120,3 +139,76 @@ def get_price_groups(request):
         }
     )
 
+
+class InstructionListView(ListView):
+    model = Instruction
+    template_name = 'zaek/instruction_list.html'  # путь к шаблону
+    context_object_name = 'instructions'
+
+from django.db.models import Prefetch
+
+
+
+class InstructionDetailView(DetailView):
+    model = Instruction
+    template_name = 'zaek/instruction_detail.html'
+    context_object_name = 'instruction'
+
+    def get_object(self):
+        instruction = get_object_or_404(
+            Instruction.objects.prefetch_related(
+                Prefetch('steps', queryset=InstructionStep.objects.order_by('step'))
+            ),
+            pk=self.kwargs.get('pk')
+        )
+        return instruction
+
+
+
+
+def test_func_find_objects_view(request):
+    find_objects_in_load_excel()
+
+
+    return render(
+        request,
+        template_name='zaek/find_objects_in_load_excel.html'
+    )
+
+
+
+
+
+def consolidated_table(request):
+    try:
+
+        if request.method == 'POST':
+            form = ConsolidatedTableForm(request.POST, request.FILES)
+            if form.is_valid():
+
+                if request.FILES.get('file'):
+                    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                    response['Content-Disposition'] = 'attachment; filename="consolidated_table.xlsx"'
+                    excel_file = find_consolidated_table(request.FILES.get('file'))
+                    response.write(excel_file.read())
+                    return response
+
+        else:
+            form = ConsolidatedTableForm()
+
+
+        return render(
+            request, 'zaek/consolidated_table.html',
+            {
+                'form': form,
+                "sheet_name": zaek_sheet,
+                'columns_list': ", ".join(base_columns)
+            }
+        )
+
+    except Exception as e:
+        return render(
+            request,
+            template_name='zaek/info.html',
+            context={'massage': f'Сервер в отпуске ({e})'}
+        )

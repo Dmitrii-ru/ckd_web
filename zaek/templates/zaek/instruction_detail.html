@@ -1,0 +1,37 @@
+{% extends 'base_app/base.html' %}
+{% load static %}
+
+
+{%block context%}
+  <title>
+        {% block title %} ZAEK {% endblock %}
+  </title>
+
+
+<div class="d-flex flex-column justify-content-center align-items-center">
+    <p>{{ instruction.description }}</p>
+
+    <p>
+        <h2>{{ instruction }}</h2>
+    </p>
+    {% for step in instruction.steps.all %}
+
+        <a href="" class="m-1">
+            <h3>Шаг {{ step.step|add:"1" }}</h3>
+                {% if step.photo %}
+                 <img src="{{ step.photo.url }}" alt="Step Photo" class="img-fluid">
+                {% endif %}
+            <p4>{{ step.comment }} </p4>
+        </a>
+
+    {% empty %}
+    <p>Шаги не найдены.</p>
+    {% endfor %}
+</div>
+{%endblock%}
+
+
+
+
+
+

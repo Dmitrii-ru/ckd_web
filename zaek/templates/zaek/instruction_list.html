@@ -1,0 +1,18 @@
+{% extends 'base_app/base.html' %}
+{% load static %}
+
+
+{%block context%}
+  <title>
+        {% block title %} ZAEK {% endblock %}
+  </title>
+<div class="d-flex justify-content-center">
+      {% for instruction in instructions%}
+          <div class="d-flex justify-content-center m-1">
+                  <a href="{% url 'zaek:instruction_detail' pk=instruction.pk %}" class="btn btn-success m-1">
+                    {{instruction.title}}
+                  </a>
+          </div>
+      {% endfor %}
+</div>
+{%endblock%}
