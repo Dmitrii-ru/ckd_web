@@ -5,7 +5,7 @@ from django.shortcuts import render, get_object_or_404
 from urllib3.filepost import writer
 
 from .consts_zaek import base_columns, zaek_sheet, custom_price_name, price_name, price_groups, delimiter_price_csv
-from .forms import PriceLoadZaekForm, PriceLoadZaekGroupsForm, ConsolidatedTableForm
+from .forms import PriceLoadZaekForm, PriceLoadZaekGroupsForm, ConsolidatedTableForm, FindObjectsExcelForm
 from zaek.utils.parser_price.need_price import need_price_func
 from .models import ZaekPrice, Instruction, InstructionStep
 from django.utils import timezone
@@ -166,14 +166,65 @@ class InstructionDetailView(DetailView):
 
 
 
-def test_func_find_objects_view(request):
-    find_objects_in_load_excel()
+def func_find_objects_view(request):
+
+    try:
+        if request.method == 'POST':
+            form = FindObjectsExcelForm(request.POST, request.FILES)
+            if form.is_valid():
+                if request.FILES.get('file'):
+                    excel_file = find_objects_in_load_excel(request.FILES.get('file'))
+                    if excel_file:
+                        response = HttpResponse(
+                            excel_file,
+                            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                        )
+                        response['Content-Disposition'] = 'attachment; filename="find_objects_xlsx.xlsx"'
+                        return response
+        else:
+            form = FindObjectsExcelForm()
+
+        return render(
+            request, 'zaek/find_objects_in_load_excel.html',
+            {
+                'form': form,
+                "sheet_name": FindObjectsExcelForm.sheet_name,
+                'columns_list': ", ".join(FindObjectsExcelForm.columns)
+            }
+        )
+
+    except Exception as e:
+        return render(
+            request,
+            template_name='zaek/info.html',
+            context={'massage': f'Сервер в отпуске ({e})'}
+        )
 
 
-    return render(
-        request,
-        template_name='zaek/find_objects_in_load_excel.html'
-    )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -181,9 +232,9 @@ def test_func_find_objects_view(request):
 
 def consolidated_table(request):
     try:
-
         if request.method == 'POST':
             form = ConsolidatedTableForm(request.POST, request.FILES)
+
             if form.is_valid():
 
                 if request.FILES.get('file'):
@@ -201,8 +252,8 @@ def consolidated_table(request):
             request, 'zaek/consolidated_table.html',
             {
                 'form': form,
-                "sheet_name": zaek_sheet,
-                'columns_list': ", ".join(base_columns)
+                "sheet_name": ConsolidatedTableForm.sheet_name,
+                'columns_list': ", ".join(ConsolidatedTableForm.columns)
             }
         )
 

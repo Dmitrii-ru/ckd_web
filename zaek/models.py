@@ -163,11 +163,12 @@ class VolumeAtDiscount(models.Model):
     
 
     def __str__(self):
-        return (f'{self.type_client} '
-                f'{self.volume_level} '
-                f'{self.classification_price_product} '
-                f'{self.discount} '
-                )
+        return (
+            f'{self.type_client} '
+            f'{self.volume_level} '
+            f'{self.classification_price_product} '
+            f'{self.discount} '
+        )
 
 
 
@@ -177,7 +178,8 @@ class Product(models.Model):
         verbose_name = 'Продукт'
         verbose_name_plural = 'Продукты'
 
-    classification = models.ForeignKey(ClassificationPriceProduct,
+    classification = models.ForeignKey(
+        ClassificationPriceProduct,
         verbose_name= 'Классификация ПП',
         blank=True,
         null=True,
@@ -191,7 +193,11 @@ class Product(models.Model):
         default='Нет данных'
     )
 
-    level = models.IntegerField(blank=False, null=False, default=0)
+    level = models.IntegerField(
+        blank=False,
+        null=False,
+        default=0
+    )
     
     name = models.TextField(
         verbose_name='Номенклатура',
