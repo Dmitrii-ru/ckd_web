@@ -280,6 +280,9 @@ class CreateDictFindObjectsExcel:
         return col_letter
 
 
+    def color_section(self,color_type_client_type):
+        return PatternFill(start_color=color_type_client_type, end_color=color_type_client_type, fill_type="solid")
+
     def create_dict(self):
 
         """Формируем объект в виде словаря"""
@@ -328,19 +331,26 @@ class CreateDictFindObjectsExcel:
 
                 for discount in request_product.classification.classification_discounts.all():
                     discount_type_client_type = discount.type_client.type
+                    color_type_client_type = discount.type_client.color
                     list_type_client.append(f'{discount_type_client_type}')
+
                     col_letter_type_client_discount = self.get_or_create_header(f'{discount_type_client_type} скидка')
                     col_letter_type_client_sale_solo = self.get_or_create_header(f'{discount_type_client_type} шт с НДС')
                     col_letter_type_client_sale_summ = self.get_or_create_header(f'{discount_type_client_type} сумма с НДС')
 
+
                     self.ws[f'{col_letter_type_client_discount}{idx}'] = discount.discount
+                    self.ws[f'{col_letter_type_client_discount}{idx}'].fill = self.color_section(color_type_client_type)
 
                     self.ws[f'{col_letter_type_client_sale_solo}{idx}'] = (
                         f'={col_letter_price_with_nds}{idx}*(1-{col_letter_type_client_discount}{idx}/100)'
                     )
+                    self.ws[f'{col_letter_type_client_sale_solo}{idx}'].fill = self.color_section(color_type_client_type)
+
                     self.ws[f'{col_letter_type_client_sale_summ}{idx}'] = (
                         f'={col_letter_kol}{idx}*{col_letter_type_client_sale_solo}{idx}'
                     )
+                    self.ws[f'{col_letter_type_client_sale_summ}{idx}'].fill = self.color_section(color_type_client_type)
 
 
 

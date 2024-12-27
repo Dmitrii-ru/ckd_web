@@ -18,6 +18,7 @@ class ClassificationPriceProduct(models.Model):
 class TypeClient(models.Model):
     """Тип клиента"""
     type = models.CharField("Тип клиента", max_length=200)
+    color = models.CharField('Цвет',max_length=20,default='d6e1c2')
     classification_price_products = models.ManyToManyField(
         ClassificationPriceProduct,
         through='ClientClassificationDiscount',

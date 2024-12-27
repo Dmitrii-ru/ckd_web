@@ -3,13 +3,19 @@ from django.contrib import admin
 from .models import *
 
 admin.site.register(ZaekPrice)
-admin.site.register(Product)
 admin.site.register(ClassificationPriceProduct)
 admin.site.register(TypeClient)
 admin.site.register(VolumeLevel)
 
 from django.contrib import admin
 from .models import Instruction, InstructionStep
+
+
+class ProductAdmin(admin.ModelAdmin):
+    search_fields = ['art']  # Указываем поле, по которому будет осуществляться поиск
+
+admin.site.register(Product, ProductAdmin)
+
 
 class InstructionStepInline(admin.TabularInline):
     model = InstructionStep
