@@ -35,7 +35,7 @@ class ClientClassificationDiscountAdmin(admin.ModelAdmin):
 
 @admin.register(VolumeAtDiscount)
 class VolumeAtDiscountAdmin(admin.ModelAdmin):
-    list_display = ('type_client', 'volume_level', 'discount')
+    list_display = ('type_client', 'volume_level','classification_price_product', 'discount')
     list_filter = ('volume_level','type_client')
 
 

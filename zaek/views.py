@@ -181,6 +181,7 @@ def func_find_objects_view(request):
                         )
                         response['Content-Disposition'] = 'attachment; filename="find_objects_xlsx.xlsx"'
                         return response
+
         else:
             form = FindObjectsExcelForm()
 

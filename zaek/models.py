@@ -1,6 +1,6 @@
 from django.db import models
 from django.utils import timezone
-
+from django.core.exceptions import ValidationError
 
 class ClassificationPriceProduct(models.Model):
     """Ценовая категория"""
@@ -97,8 +97,9 @@ class VolumeLevel(models.Model):
 
     stop_value = models.FloatField(
         verbose_name='До',
-        unique=True,
-        blank=False,
+        unique=False,
+        blank=True,
+        null=True,
         default=0
     )
 
@@ -149,27 +150,39 @@ class VolumeAtDiscount(models.Model):
 
 
     class Meta:
-
-        ''' Уникальные сочинение типа клина и объем'''
-
         verbose_name = 'Скидка за объем'
         verbose_name_plural = '3.2 Скидки за объем'
-
         constraints = [
             models.UniqueConstraint(
-                fields=['type_client', 'volume_level'],
+                fields=['classification_price_product', 'volume_level', 'type_client'],
                 name='unique_type_client_volume_level'
             )
         ]
-    
+
+    def clean(self):
+        existing = VolumeAtDiscount.objects.filter(
+            classification_price_product=self.classification_price_product,
+            volume_level=self.volume_level,
+            type_client=self.type_client
+        )
+
+        if self.pk:
+            existing = existing.exclude(pk=self.pk)
+
+        if existing.exists():
+            raise ValidationError(
+                "Запись с таким типом клиента, значением объема и ценовой категорией уже существует."
+            )
 
     def __str__(self):
         return (
             f'{self.type_client} '
             f'{self.volume_level} '
-            f'{self.classification_price_product} '
+            f'{self.classification_price_product}'
             f'{self.discount} '
         )
+
+
 
 
 
@@ -288,7 +301,7 @@ class Product(models.Model):
         verbose_name='Норма упаковки',
         blank=True,
         null=True,
-        default=0
+        default=1
 
     )
     nomenclature_group = models.CharField(
