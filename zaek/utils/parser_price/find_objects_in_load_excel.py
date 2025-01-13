@@ -1,15 +1,18 @@
 from decimal import Decimal
 from io import BytesIO
 from django.db.models import Prefetch
-from openpyxl.styles import PatternFill
+from openpyxl.styles import PatternFill, Alignment
 from zaek.consts_zaek import split_parent_base, split_parent_obj
 from zaek.models import Product, ClientClassificationDiscount, VolumeAtDiscount, ClassificationPriceProduct, VolumeLevel
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter, column_index_from_string
-
+from openpyxl.styles import NamedStyle
 import pandas as pd
 
 class CreateDictFindObjectsExcel:
+    ruble_style = NamedStyle(name="RubleStyle")
+    ruble_style.number_format = '#,##0.00 "₽"'
+
     def __init__(
             self,
             request_products=None,
@@ -29,17 +32,23 @@ class CreateDictFindObjectsExcel:
         self.volume_level = None
         self.volume_level_discounts ={}
         self.color_warning = 'cc3333'
+        self.color_true ="00a86b"
+        self.dict_costumer_num_row = {}
+        self.end_row = 0
+        self.base_wight_col = 20
+        self.wraptext = True
 
-    def get_price_group_list(self,price_group_list):
-        """Добавляем уровни родителей в объект"""
-        for group in price_group_list.split(split_parent_base):
-            level_value = group.split(split_parent_obj)
-            level = int(level_value[0])
-            value = level_value[1]
-            level_name = f'Уровень: {level}'
-            if level_name not in self.price_group_list_columns_to_sort:
-                self.price_group_list_columns_to_sort.append(level_name)
-            self.product[f'Уровень: {level}'] = value
+
+    # def get_price_group_list(self,price_group_list):
+    #     """Добавляем уровни родителей в объект"""
+    #     for group in price_group_list.split(split_parent_base):
+    #         level_value = group.split(split_parent_obj)
+    #         level = int(level_value[0])
+    #         value = level_value[1]
+    #         level_name = f'Уровень: {level}'
+    #         if level_name not in self.price_group_list_columns_to_sort:
+    #             self.price_group_list_columns_to_sort.append(level_name)
+    #         self.product[f'Уровень: {level}'] = value
 
     def get_float(self,obj):
 
@@ -60,13 +69,20 @@ class CreateDictFindObjectsExcel:
             return obj
         col_letter =get_column_letter(len(self.test_header)+1)
         self.test_header[key] = col_letter
-        self.ws[f"{col_letter}{self.start_header-1}"] = key
+
+        self.ws[f"{col_letter}{self.start_header - 1}"] = key
+        self.ws.column_dimensions[col_letter].width = self.base_wight_col
+        self.ws[f"{col_letter}{self.start_header - 1}"].alignment = Alignment(wrapText=True)
         return col_letter
 
 
     def color_section(self,color_type_client_type):
         """Настройки закраски клеток"""
         return PatternFill(start_color=color_type_client_type, end_color=color_type_client_type, fill_type="solid")
+
+    def obj_money_style_rub(self,obj):
+        """Денежный стиль в рублях"""
+        obj.number_format = CreateDictFindObjectsExcel.ruble_style.number_format
 
 
     def sellable_quantity(self,pack_size,quantity):
@@ -101,6 +117,13 @@ class CreateDictFindObjectsExcel:
                 self.volume_level_discounts[v.type_client.type] = {}
             self.volume_level_discounts[v.type_client.type][v.classification_price_product.name] = v.discount
 
+    def cut_name_row(self,value):
+        num_row = self.dict_costumer_num_row.get(value)
+        if not num_row:
+            self.end_row+=1
+            self.dict_costumer_num_row[value] = self.end_row
+            return self.end_row
+        return num_row
 
     def get_project_discount(self,cli,classif,discount,color):
         """Получение по ключу проектную скидку """
@@ -118,13 +141,32 @@ class CreateDictFindObjectsExcel:
         else:
             raise ValueError("Нет предыдущей колонки для первой колонки (A).")
 
-    def create_summ_formula_and_title(self,letter,row_num,formula):
-        self.ws[f'{letter}{row_num + 1}'] = formula
-        self.ws[f'{self.get_previous_column_letter(letter)}{row_num + 1 }'] = 'Сумма с НДС'
+    def align_text_center(self):
+        for row in self.ws.iter_rows():
+            for cell in row:
+                if cell.value:
+                    cell.alignment = Alignment(horizontal="center", vertical="center")
 
-        self.ws[f'{letter}{row_num + 2}'] = f'={letter}{row_num + 1} * 0.8'
-        self.ws[f'{self.get_previous_column_letter(letter)}{row_num + 2}'] = 'Сумма без НДС'
 
+    def create_summ_formula_and_title(self,letter,value,color=None):
+        ssn = 'Сумма с НДС'
+        sbn = 'Сумма без НДС'
+        ssn_row = self.cut_name_row(ssn)
+        sbn_line = self.cut_name_row(sbn)
+
+        self.ws[f'{letter}{ssn_row}'] = value
+        self.ws[f'{self.get_previous_column_letter(letter)}{ssn_row}'] = ssn
+        self.ws[f'{letter}{sbn_line}'] = f'={letter}{ssn_row} * 0.8'
+        self.ws[f'{self.get_previous_column_letter(letter)}{sbn_line}'] = sbn
+
+        if color:
+            self.ws[f'{letter}{ssn_row}'].fill = self.color_section(color)
+            self.ws[f'{letter}{sbn_line}'].fill = self.color_section(color)
+            self.ws[f'{self.get_previous_column_letter(letter)}{ssn_row}'].fill = self.color_section(color)
+            self.ws[f'{self.get_previous_column_letter(letter)}{sbn_line}'].fill = self.color_section(color)
+
+        self.obj_money_style_rub(self.ws[f'{letter}{ssn_row}'])
+        self.obj_money_style_rub(self.ws[f'{letter}{sbn_line}'])
 
 
     def create_dict(self):
@@ -133,7 +175,7 @@ class CreateDictFindObjectsExcel:
         list_request_products_dict_keys= list(self.request_products_dict.keys())
         count_request_products = len(list_request_products_dict_keys)
         dict_request_products = {obj.art: obj for obj in self.request_products}
-        list_type_client = []
+        dict_type_client = {}
 
 
 
@@ -169,10 +211,13 @@ class CreateDictFindObjectsExcel:
 
                 col_letter_price_with_nds = self.get_or_create_header('Цена (с НДС) руб.')
                 self.ws[f'{col_letter_price_with_nds}{idx}'] = request_product.price_with_nds
+                self.obj_money_style_rub(self.ws[f'{col_letter_price_with_nds}{idx}'])
 
                 col_letter_summ_base = self.get_or_create_header('Сумма по прайсу с НДС')
                 self.ws[f'{col_letter_summ_base}{idx}'] = \
                     f"={col_letter_price_with_nds}{idx} * {col_letter_kol}{idx}"
+                self.obj_money_style_rub(self.ws[f'{col_letter_summ_base}{idx}'])
+
 
                 request_product_packaging_norm = self.get_float(request_product.packaging_norm)
                 col_letter_packaging_norm = self.get_or_create_header('Норма упаковки')
@@ -183,14 +228,20 @@ class CreateDictFindObjectsExcel:
                     f"=IF(MOD({col_letter_kol}{idx}, {col_letter_packaging_norm}{idx}) = 0, " \
                     f"{col_letter_kol}{idx}, " \
                     f"(INT({col_letter_kol}{idx} / {col_letter_packaging_norm}{idx}) + 1) * {col_letter_packaging_norm}{idx})"
-                if count_product % Decimal(request_product_packaging_norm) != 0:
-                    self.ws[f'{col_letter_packaging_norm_result}{idx}'].fill = self.color_section(self.color_warning)
+
+
+                self.ws[f'{col_letter_packaging_norm_result}{idx}'].fill = self.color_section(
+                    self.color_warning if count_product % Decimal(request_product_packaging_norm) != 0 else self.color_true
+                )
+
+
 
                 col_letter_summ_packaging_norm_result = self.get_or_create_header('Сумма с округлением норма упаковки')
 
                 self.ws[f'{col_letter_summ_packaging_norm_result}{idx}'] = \
                     f"={col_letter_price_with_nds}{idx} * {col_letter_packaging_norm_result}{idx}"
 
+                self.obj_money_style_rub(self.ws[f'{col_letter_summ_packaging_norm_result}{idx}'])
                 self.summ_packaging_norm_result_all += self.sellable_quantity(Decimal(request_product_packaging_norm),count_product) * request_product.price_with_nds
 
 
@@ -202,26 +253,50 @@ class CreateDictFindObjectsExcel:
 
 
         start_row = self.start_header   # Начальная строка данных
-        end_row = self.start_header + count_request_products  # Конечная строка данных
-
-
-
-        formula = f"=SUM({col_letter_summ_base}{start_row}:{col_letter_summ_base}{end_row})"
-        self.create_summ_formula_and_title(col_letter_summ_base,end_row,formula)
-
-        formula = f"=SUM({col_letter_summ_packaging_norm_result}{start_row}:{col_letter_summ_packaging_norm_result}{end_row})"
-        self.create_summ_formula_and_title(col_letter_summ_packaging_norm_result, end_row, formula)
-
-
-
+        end_row = self.start_header + count_request_products - 1 # Конечная строка данных
+        self.end_row  = self.start_header + count_request_products
 
 
         self.volume_level = self.fide_volume_level_project_discount()
-        if self.volume_level:
+        project_discount_flag = True if self.volume_level else False
+        if project_discount_flag:
             self.create_volume_level_discounts()
 
 
+        """Обозначим проектную скидку"""
+        project_discount_flag = True if self.volume_level else False
+        project_discount_title = 'Градация за объем проектной скидки от:'
+        project_discount_title_row = self.cut_name_row(project_discount_title)
+        self.ws[f'A{project_discount_title_row}'] = project_discount_title
 
+        self.ws[f'B{project_discount_title_row}']= (
+            self.volume_level.start_value if project_discount_flag else "Не подходит ни под один параметр"
+        )
+
+        self.ws[f'B{project_discount_title_row}'].fill = self.color_section(
+            self.color_true if project_discount_flag else self.color_warning
+        )
+
+        """Базовый расчет суммы"""
+        formula = f"=SUM({col_letter_summ_base}{start_row}:{col_letter_summ_base}{end_row})"
+        self.create_summ_formula_and_title(
+            letter=col_letter_summ_base,
+            value=formula
+        )
+
+        formula = f"=SUM({col_letter_summ_packaging_norm_result}{start_row}:{col_letter_summ_packaging_norm_result}{end_row})"
+        self.create_summ_formula_and_title(
+            letter=col_letter_summ_packaging_norm_result,
+            value=formula
+        )
+
+
+
+
+
+
+
+        """Создаем расчет по типам клиентов"""
         for i, row in self.df.iterrows():
             idx = i + self.start_header
             art_obj = str(row['Арт'])
@@ -231,7 +306,8 @@ class CreateDictFindObjectsExcel:
                 discount_type_client_type = discount.type_client.type
                 color_type_client_type = discount.type_client.color
 
-                list_type_client.append(f'{discount_type_client_type}')
+                dict_type_client[discount_type_client_type]=color_type_client_type
+
 
                 col_letter_type_client_discount = self.get_or_create_header(f'{discount_type_client_type} скидка')
                 col_letter_type_client_sale_solo = self.get_or_create_header(f'{discount_type_client_type} шт с НДС')
@@ -244,15 +320,16 @@ class CreateDictFindObjectsExcel:
                 self.ws[f'{col_letter_type_client_sale_solo}{idx}'] = (
                     f'={col_letter_price_with_nds}{idx}*(1-{col_letter_type_client_discount}{idx}/100)'
                 )
+                self.obj_money_style_rub(self.ws[f'{col_letter_type_client_sale_solo}{idx}'])
                 self.ws[f'{col_letter_type_client_sale_solo}{idx}'].fill = self.color_section(color_type_client_type)
 
                 self.ws[f'{col_letter_type_client_sale_summ}{idx}'] = (
                     f'={col_letter_packaging_norm_result}{idx}*{col_letter_type_client_sale_solo}{idx}'
                 )
+                self.obj_money_style_rub(self.ws[f'{col_letter_type_client_sale_summ}{idx}'])
                 self.ws[f'{col_letter_type_client_sale_summ}{idx}'].fill = self.color_section(color_type_client_type)
 
                 """Проектные скидки от объема """
-
                 col_letter_projects_type_client_discount = self.get_or_create_header(f'{discount_type_client_type} проектная скидка')
                 col_letter_projects_type_client_sale_solo = self.get_or_create_header(f'{discount_type_client_type} проектная шт с НДС')
                 col_letter_projects_type_client_sale_summ = self.get_or_create_header(f'{discount_type_client_type} проектная сумма кратно уп. с НДС')
@@ -270,11 +347,13 @@ class CreateDictFindObjectsExcel:
                 self.ws[f'{col_letter_projects_type_client_sale_solo}{idx}'] = (
                     f'={col_letter_price_with_nds}{idx}*(1-{col_letter_projects_type_client_discount}{idx}/100)'
                 )
+                self.obj_money_style_rub(self.ws[f'{col_letter_projects_type_client_sale_solo}{idx}'])
                 self.ws[f'{col_letter_projects_type_client_sale_solo}{idx}'].fill = self.color_section(color_type_client_type)
 
                 self.ws[f'{col_letter_projects_type_client_sale_summ}{idx}'] = (
                     f'={col_letter_packaging_norm_result}{idx}*{col_letter_projects_type_client_sale_solo}{idx}'
                 )
+                self.obj_money_style_rub(self.ws[f'{col_letter_projects_type_client_sale_summ}{idx}'])
                 self.ws[f'{col_letter_projects_type_client_sale_summ}{idx}'].fill = self.color_section(color_type_client_type)
 
 
@@ -282,15 +361,24 @@ class CreateDictFindObjectsExcel:
 
 
         """Расчет сумм по типам клиентов"""
-        for type_client in list_type_client:
+        for type_client in list(dict_type_client.keys()):
             col_letter_client = self.get_or_create_header(f'{type_client} сумма с НДС')
             formula = f"=SUM({col_letter_client}{start_row}:{col_letter_client}{end_row})"
-            self.create_summ_formula_and_title(col_letter_client, end_row, formula)
+            self.create_summ_formula_and_title(
+                letter=col_letter_client,
+                value=formula,
+                color=dict_type_client.get(type_client)
+            )
 
             col_letter_client = self.get_or_create_header(f'{type_client} проектная сумма кратно уп. с НДС')
             formula = f"=SUM({col_letter_client}{start_row}:{col_letter_client}{end_row})"
-            self.create_summ_formula_and_title(col_letter_client, end_row, formula)
+            self.create_summ_formula_and_title(
+                letter=col_letter_client,
+                value=formula,
+                color=dict_type_client.get(type_client)
+            )
 
+        self.align_text_center()
         return self.wb
 
 
