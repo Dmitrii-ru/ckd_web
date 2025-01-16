@@ -1,3 +1,4 @@
+import math
 from decimal import Decimal
 from io import BytesIO
 from django.db.models import Prefetch
@@ -8,6 +9,14 @@ from openpyxl import Workbook
 from openpyxl.utils import get_column_letter, column_index_from_string
 from openpyxl.styles import NamedStyle
 import pandas as pd
+
+
+def art_format(art):
+    try:
+        return str(int(art))
+    except:
+        return str(art)
+
 
 class CreateDictFindObjectsExcel:
     ruble_style = NamedStyle(name="RubleStyle")
@@ -34,7 +43,7 @@ class CreateDictFindObjectsExcel:
         self.color_warning = 'cc3333'
         self.color_true ="00a86b"
         self.dict_costumer_num_row = {}
-        self.end_row = 0
+        self.end_row = 1
         self.base_wight_col = 20
         self.wraptext = True
 
@@ -50,17 +59,29 @@ class CreateDictFindObjectsExcel:
     #             self.price_group_list_columns_to_sort.append(level_name)
     #         self.product[f'Уровень: {level}'] = value
 
-    def get_float(self,obj):
-
+    def get_float(self, obj):
         try:
-            float_obj = float(obj)
-            if float_obj<0:
-                return 0.0
-            else:
-                return float_obj
-        except:
-            return 0.0
+            print(f"DEBUG: raw obj={obj}, type={type(obj)}")
 
+            if isinstance(obj, Decimal):
+                if obj.is_nan():
+                    raise ValueError("Значение Decimal является NaN")
+                float_obj = float(obj)
+
+            else:
+                float_obj = float(obj)
+                if math.isnan(float_obj):
+                    raise ValueError("Значение float является NaN")
+
+            if float_obj < 0:
+                ret = 0.0
+            else:
+                ret = float_obj
+
+        except (ValueError, TypeError) as e:
+
+            ret = 0.0
+        return ret
 
     def get_or_create_header(self,key):
         """Создаю колонки по запросу"""
@@ -84,25 +105,32 @@ class CreateDictFindObjectsExcel:
         """Денежный стиль в рублях"""
         obj.number_format = CreateDictFindObjectsExcel.ruble_style.number_format
 
-
-    def sellable_quantity(self,pack_size,quantity):
+    def sellable_quantity(self, pack_size, quantity):
         """Вычисление кратности упаковки"""
-        if quantity % pack_size == 0:
-            return quantity
-        else:
-            return ((quantity // pack_size) + 1) * pack_size
+        try:
+            if quantity % pack_size == 0:
+                return quantity
+            else:
+                return ((quantity // pack_size) + 1) * pack_size
+        except Exception as e:
+            print(f"Ошибка в sellable_quantity: pack_size={pack_size}, quantity={quantity}, ошибка={e}")
+            return 0
 
     def fide_volume_level_project_discount(self):
         """Получение скидки за счет объема (Проектная скидка)"""
         try:
+
             value = self.summ_packaging_norm_result_all
+            print(value,'ss')
             discounts = VolumeLevel.objects.all().order_by('start_value')
+
 
             if value < discounts.first().start_value:
                 return None
 
             for i, disc in enumerate(discounts):
                 if value < disc.start_value:
+
                     return discounts[i-1]
 
             return discounts.last()
@@ -170,7 +198,7 @@ class CreateDictFindObjectsExcel:
 
 
     def create_dict(self):
-
+        print('create_dict')
         """Формируем объект в виде словаря"""
         list_request_products_dict_keys= list(self.request_products_dict.keys())
         count_request_products = len(list_request_products_dict_keys)
@@ -179,51 +207,47 @@ class CreateDictFindObjectsExcel:
 
 
 
-        col_letter_art = None
-        col_letter_price_with_nds = None
-        col_letter_kol = None
-        col_letter_summ_base = None
-        col_letter_classification = None
-        col_letter_type_client = None
-        col_letter_summ_packaging_norm_result = None
-        col_letter_packaging_norm_result = None
+
+
+        col_letter_art = self.get_or_create_header('Артикул')
+        col_letter_classification = self.get_or_create_header('Номенклатура')
+        col_letter_kol = self.get_or_create_header('Кол-во')
+        col_letter_price_with_nds = self.get_or_create_header('Цена (с НДС) руб.')
+        col_letter_summ_base = self.get_or_create_header('Сумма по прайсу с НДС')
+        col_letter_packaging_norm = self.get_or_create_header('Норма упаковки')
+        col_letter_packaging_norm_result = self.get_or_create_header('Количество с округлением норма упаковки')
+        col_letter_summ_packaging_norm_result = self.get_or_create_header('Сумма с округлением норма упаковки')
 
         for i, row in self.df.iterrows():
             idx = i + self.start_header
-            art_obj = str(row['Арт'])
+
+            art_obj = art_format(row['Арт'])
             count_odj = row['Кол']
             request_product = dict_request_products.get(art_obj)
 
             if request_product:
-                col_letter_art = self.get_or_create_header('Артикул')
+
                 self.ws[f'{col_letter_art}{idx}'] = request_product.art
 
-                col_letter_classification = self.get_or_create_header('Номенклатура')
                 self.ws[f'{col_letter_classification}{idx}'] = request_product.name
 
-                col_letter_kol = self.get_or_create_header('Кол-во')
                 count_product = Decimal(self.get_float(count_odj))
                 self.ws[f'{col_letter_kol}{idx}'] = count_product
 
-                col_letter_classification = self.get_or_create_header('Классификация ПП')
                 self.ws[f'{col_letter_classification}{idx}'] = request_product.classification.name
                 self.classification_list.add(request_product.classification.name)
 
-                col_letter_price_with_nds = self.get_or_create_header('Цена (с НДС) руб.')
                 self.ws[f'{col_letter_price_with_nds}{idx}'] = request_product.price_with_nds
                 self.obj_money_style_rub(self.ws[f'{col_letter_price_with_nds}{idx}'])
 
-                col_letter_summ_base = self.get_or_create_header('Сумма по прайсу с НДС')
                 self.ws[f'{col_letter_summ_base}{idx}'] = \
                     f"={col_letter_price_with_nds}{idx} * {col_letter_kol}{idx}"
                 self.obj_money_style_rub(self.ws[f'{col_letter_summ_base}{idx}'])
 
-
                 request_product_packaging_norm = self.get_float(request_product.packaging_norm)
-                col_letter_packaging_norm = self.get_or_create_header('Норма упаковки')
+
                 self.ws[f'{col_letter_packaging_norm}{idx}'] = request_product_packaging_norm
 
-                col_letter_packaging_norm_result = self.get_or_create_header('Количество с округлением норма упаковки')
                 self.ws[f'{col_letter_packaging_norm_result}{idx}'] = \
                     f"=IF(MOD({col_letter_kol}{idx}, {col_letter_packaging_norm}{idx}) = 0, " \
                     f"{col_letter_kol}{idx}, " \
@@ -234,27 +258,22 @@ class CreateDictFindObjectsExcel:
                     self.color_warning if count_product % Decimal(request_product_packaging_norm) != 0 else self.color_true
                 )
 
-
-
-                col_letter_summ_packaging_norm_result = self.get_or_create_header('Сумма с округлением норма упаковки')
-
                 self.ws[f'{col_letter_summ_packaging_norm_result}{idx}'] = \
                     f"={col_letter_price_with_nds}{idx} * {col_letter_packaging_norm_result}{idx}"
 
                 self.obj_money_style_rub(self.ws[f'{col_letter_summ_packaging_norm_result}{idx}'])
-                self.summ_packaging_norm_result_all += self.sellable_quantity(Decimal(request_product_packaging_norm),count_product) * request_product.price_with_nds
 
-
+                sum_obj = self.sellable_quantity(Decimal(request_product_packaging_norm),count_product) * request_product.price_with_nds
+                self.summ_packaging_norm_result_all += sum_obj
 
             else:
-                col_letter_art = self.get_or_create_header('Артикул')
                 self.ws[f'{col_letter_art}{idx}'] = art_obj
 
 
 
         start_row = self.start_header   # Начальная строка данных
         end_row = self.start_header + count_request_products - 1 # Конечная строка данных
-        self.end_row  = self.start_header + count_request_products
+        self.end_row  = self.start_header + count_request_products + 1
 
 
         self.volume_level = self.fide_volume_level_project_discount()
@@ -263,14 +282,12 @@ class CreateDictFindObjectsExcel:
             self.create_volume_level_discounts()
 
 
-
+        print("Обозначим проектную скидку")
         """Обозначим проектную скидку"""
         project_discount_flag = True if self.volume_level else False
         project_discount_title = 'Градация за объем проектной скидки от:'
         project_discount_title_row = self.cut_name_row(project_discount_title)
         self.ws[f'A{project_discount_title_row}'] = project_discount_title
-
-
 
 
         self.ws[f'B{project_discount_title_row}']= (
@@ -281,6 +298,7 @@ class CreateDictFindObjectsExcel:
             self.color_true if project_discount_flag else self.color_warning
         )
         self.obj_money_style_rub(self.ws[f'B{project_discount_title_row}'])
+
         """Базовый расчет суммы"""
         formula = f"=SUM({col_letter_summ_base}{start_row}:{col_letter_summ_base}{end_row})"
         self.create_summ_formula_and_title(
@@ -299,14 +317,16 @@ class CreateDictFindObjectsExcel:
 
 
 
-
+        print("Создаем расчет по типам клиентов")
         """Создаем расчет по типам клиентов"""
         for i, row in self.df.iterrows():
             idx = i + self.start_header
-            art_obj = str(row['Арт'])
+
+            art_obj = art_format(row['Арт'])
             request_product = dict_request_products.get(art_obj)
 
             if request_product:
+                print(request_product)
                 for discount in request_product.classification.classification_discounts.all():
                     discount_type_client_type = discount.type_client.type
                     color_type_client_type = discount.type_client.color
@@ -361,10 +381,7 @@ class CreateDictFindObjectsExcel:
                     self.obj_money_style_rub(self.ws[f'{col_letter_projects_type_client_sale_summ}{idx}'])
                     self.ws[f'{col_letter_projects_type_client_sale_summ}{idx}'].fill = self.color_section(color_type_client_type)
 
-
-
-
-
+        print("Расчет сумм по типам клиентов")
         """Расчет сумм по типам клиентов"""
         for type_client in list(dict_type_client.keys()):
             col_letter_client = self.get_or_create_header(f'{type_client} сумма с НДС')
@@ -384,6 +401,7 @@ class CreateDictFindObjectsExcel:
             )
 
         self.align_text_center()
+        print('ww')
         return self.wb
 
 
@@ -392,7 +410,8 @@ def find_objects_in_load_excel(file=None):
         pd.read_excel(file)
         data_dict = {}
         for i , row in pd.read_excel(file).iterrows():
-            art = str(row['Арт'])
+            r_art=art_format(row['Арт'])
+            art = str(r_art)
             data_dict[art] = row['Кол']
 
         data_keys_list = list(data_dict.keys())
@@ -412,8 +431,6 @@ def find_objects_in_load_excel(file=None):
                 queryset=VolumeAtDiscount.objects.select_related('volume_level', 'type_client'),
             )
         ).filter(art__in=data_keys_list)
-
-
 
         if products:
 

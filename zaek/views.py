@@ -173,6 +173,7 @@ def func_find_objects_view(request):
             form = FindObjectsExcelForm(request.POST, request.FILES)
             if form.is_valid():
                 if request.FILES.get('file'):
+                    print('w')
                     excel_file = find_objects_in_load_excel(request.FILES.get('file'))
                     if excel_file:
                         response = HttpResponse(
