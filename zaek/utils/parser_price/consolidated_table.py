@@ -29,7 +29,7 @@ def find_consolidated_table(file=None):
                     new_data[art] += kol
                 else:
                     new_data[art] = kol
-
+        print('ww')
         new_df = pd.DataFrame(list(new_data.items()),columns=['Арт','Кол'])
 
         b = BytesIO()

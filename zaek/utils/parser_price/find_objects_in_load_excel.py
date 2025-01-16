@@ -263,11 +263,15 @@ class CreateDictFindObjectsExcel:
             self.create_volume_level_discounts()
 
 
+
         """Обозначим проектную скидку"""
         project_discount_flag = True if self.volume_level else False
         project_discount_title = 'Градация за объем проектной скидки от:'
         project_discount_title_row = self.cut_name_row(project_discount_title)
         self.ws[f'A{project_discount_title_row}'] = project_discount_title
+
+
+
 
         self.ws[f'B{project_discount_title_row}']= (
             self.volume_level.start_value if project_discount_flag else "Не подходит ни под один параметр"
@@ -276,7 +280,7 @@ class CreateDictFindObjectsExcel:
         self.ws[f'B{project_discount_title_row}'].fill = self.color_section(
             self.color_true if project_discount_flag else self.color_warning
         )
-
+        self.obj_money_style_rub(self.ws[f'B{project_discount_title_row}'])
         """Базовый расчет суммы"""
         formula = f"=SUM({col_letter_summ_base}{start_row}:{col_letter_summ_base}{end_row})"
         self.create_summ_formula_and_title(
@@ -302,59 +306,60 @@ class CreateDictFindObjectsExcel:
             art_obj = str(row['Арт'])
             request_product = dict_request_products.get(art_obj)
 
-            for discount in request_product.classification.classification_discounts.all():
-                discount_type_client_type = discount.type_client.type
-                color_type_client_type = discount.type_client.color
+            if request_product:
+                for discount in request_product.classification.classification_discounts.all():
+                    discount_type_client_type = discount.type_client.type
+                    color_type_client_type = discount.type_client.color
 
-                dict_type_client[discount_type_client_type]=color_type_client_type
-
-
-                col_letter_type_client_discount = self.get_or_create_header(f'{discount_type_client_type} скидка')
-                col_letter_type_client_sale_solo = self.get_or_create_header(f'{discount_type_client_type} шт с НДС')
-                col_letter_type_client_sale_summ = self.get_or_create_header(f'{discount_type_client_type} сумма с НДС')
+                    dict_type_client[discount_type_client_type]=color_type_client_type
 
 
-                """Гарантированные скидки  скидки от объема """
-                self.ws[f'{col_letter_type_client_discount}{idx}'] = discount.discount
-                self.ws[f'{col_letter_type_client_discount}{idx}'].fill = self.color_section(color_type_client_type)
-                self.ws[f'{col_letter_type_client_sale_solo}{idx}'] = (
-                    f'={col_letter_price_with_nds}{idx}*(1-{col_letter_type_client_discount}{idx}/100)'
-                )
-                self.obj_money_style_rub(self.ws[f'{col_letter_type_client_sale_solo}{idx}'])
-                self.ws[f'{col_letter_type_client_sale_solo}{idx}'].fill = self.color_section(color_type_client_type)
+                    col_letter_type_client_discount = self.get_or_create_header(f'{discount_type_client_type} скидка')
+                    col_letter_type_client_sale_solo = self.get_or_create_header(f'{discount_type_client_type} шт с НДС')
+                    col_letter_type_client_sale_summ = self.get_or_create_header(f'{discount_type_client_type} сумма с НДС')
 
-                self.ws[f'{col_letter_type_client_sale_summ}{idx}'] = (
-                    f'={col_letter_packaging_norm_result}{idx}*{col_letter_type_client_sale_solo}{idx}'
-                )
-                self.obj_money_style_rub(self.ws[f'{col_letter_type_client_sale_summ}{idx}'])
-                self.ws[f'{col_letter_type_client_sale_summ}{idx}'].fill = self.color_section(color_type_client_type)
 
-                """Проектные скидки от объема """
-                col_letter_projects_type_client_discount = self.get_or_create_header(f'{discount_type_client_type} проектная скидка')
-                col_letter_projects_type_client_sale_solo = self.get_or_create_header(f'{discount_type_client_type} проектная шт с НДС')
-                col_letter_projects_type_client_sale_summ = self.get_or_create_header(f'{discount_type_client_type} проектная сумма кратно уп. с НДС')
+                    """Гарантированные скидки  скидки от объема """
+                    self.ws[f'{col_letter_type_client_discount}{idx}'] = discount.discount
+                    self.ws[f'{col_letter_type_client_discount}{idx}'].fill = self.color_section(color_type_client_type)
+                    self.ws[f'{col_letter_type_client_sale_solo}{idx}'] = (
+                        f'={col_letter_price_with_nds}{idx}*(1-{col_letter_type_client_discount}{idx}/100)'
+                    )
+                    self.obj_money_style_rub(self.ws[f'{col_letter_type_client_sale_solo}{idx}'])
+                    self.ws[f'{col_letter_type_client_sale_solo}{idx}'].fill = self.color_section(color_type_client_type)
 
-                project_discount,color_project_discount = self.get_project_discount(
-                    discount_type_client_type,
-                    request_product.classification.name,
-                    discount.discount,
-                    color_type_client_type
-                )
+                    self.ws[f'{col_letter_type_client_sale_summ}{idx}'] = (
+                        f'={col_letter_packaging_norm_result}{idx}*{col_letter_type_client_sale_solo}{idx}'
+                    )
+                    self.obj_money_style_rub(self.ws[f'{col_letter_type_client_sale_summ}{idx}'])
+                    self.ws[f'{col_letter_type_client_sale_summ}{idx}'].fill = self.color_section(color_type_client_type)
 
-                self.ws[f'{col_letter_projects_type_client_discount}{idx}'] = project_discount
-                self.ws[f'{col_letter_projects_type_client_discount}{idx}'].fill = self.color_section(color_project_discount)
+                    """Проектные скидки от объема """
+                    col_letter_projects_type_client_discount = self.get_or_create_header(f'{discount_type_client_type} проектная скидка')
+                    col_letter_projects_type_client_sale_solo = self.get_or_create_header(f'{discount_type_client_type} проектная шт с НДС')
+                    col_letter_projects_type_client_sale_summ = self.get_or_create_header(f'{discount_type_client_type} проектная сумма кратно уп. с НДС')
 
-                self.ws[f'{col_letter_projects_type_client_sale_solo}{idx}'] = (
-                    f'={col_letter_price_with_nds}{idx}*(1-{col_letter_projects_type_client_discount}{idx}/100)'
-                )
-                self.obj_money_style_rub(self.ws[f'{col_letter_projects_type_client_sale_solo}{idx}'])
-                self.ws[f'{col_letter_projects_type_client_sale_solo}{idx}'].fill = self.color_section(color_type_client_type)
+                    project_discount,color_project_discount = self.get_project_discount(
+                        discount_type_client_type,
+                        request_product.classification.name,
+                        discount.discount,
+                        color_type_client_type
+                    )
 
-                self.ws[f'{col_letter_projects_type_client_sale_summ}{idx}'] = (
-                    f'={col_letter_packaging_norm_result}{idx}*{col_letter_projects_type_client_sale_solo}{idx}'
-                )
-                self.obj_money_style_rub(self.ws[f'{col_letter_projects_type_client_sale_summ}{idx}'])
-                self.ws[f'{col_letter_projects_type_client_sale_summ}{idx}'].fill = self.color_section(color_type_client_type)
+                    self.ws[f'{col_letter_projects_type_client_discount}{idx}'] = project_discount
+                    self.ws[f'{col_letter_projects_type_client_discount}{idx}'].fill = self.color_section(color_project_discount)
+
+                    self.ws[f'{col_letter_projects_type_client_sale_solo}{idx}'] = (
+                        f'={col_letter_price_with_nds}{idx}*(1-{col_letter_projects_type_client_discount}{idx}/100)'
+                    )
+                    self.obj_money_style_rub(self.ws[f'{col_letter_projects_type_client_sale_solo}{idx}'])
+                    self.ws[f'{col_letter_projects_type_client_sale_solo}{idx}'].fill = self.color_section(color_type_client_type)
+
+                    self.ws[f'{col_letter_projects_type_client_sale_summ}{idx}'] = (
+                        f'={col_letter_packaging_norm_result}{idx}*{col_letter_projects_type_client_sale_solo}{idx}'
+                    )
+                    self.obj_money_style_rub(self.ws[f'{col_letter_projects_type_client_sale_summ}{idx}'])
+                    self.ws[f'{col_letter_projects_type_client_sale_summ}{idx}'].fill = self.color_section(color_type_client_type)
 
 
 

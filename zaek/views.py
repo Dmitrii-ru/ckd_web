@@ -168,7 +168,7 @@ class InstructionDetailView(DetailView):
 
 def func_find_objects_view(request):
 
-    try:
+    # try:
         if request.method == 'POST':
             form = FindObjectsExcelForm(request.POST, request.FILES)
             if form.is_valid():
@@ -194,13 +194,13 @@ def func_find_objects_view(request):
             }
         )
 
-    except Exception as e:
-        return render(
-            request,
-            template_name='zaek/info.html',
-            context={'massage': f'Сервер в отпуске ({e})'}
-        )
-
+    # except Exception as e:
+    #     return render(
+    #         request,
+    #         template_name='zaek/info.html',
+    #         context={'massage': f'Сервер в отпуске ({e})'}
+    #     )
+    #
 
 
 
