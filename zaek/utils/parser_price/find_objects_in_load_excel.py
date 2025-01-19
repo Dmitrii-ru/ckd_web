@@ -213,10 +213,13 @@ class CreateDictFindObjectsExcel:
         col_letter_classification = self.get_or_create_header('Номенклатура')
         col_letter_kol = self.get_or_create_header('Кол-во')
         col_letter_price_with_nds = self.get_or_create_header('Цена (с НДС) руб.')
+        col_letter_price_not_nds = self.get_or_create_header('Цена (без НДС) руб.')
         col_letter_summ_base = self.get_or_create_header('Сумма по прайсу с НДС')
+        col_letter_summ_base_not_nds = self.get_or_create_header('Сумма по прайсу с без НДС')
         col_letter_packaging_norm = self.get_or_create_header('Норма упаковки')
         col_letter_packaging_norm_result = self.get_or_create_header('Количество с округлением норма упаковки')
-        col_letter_summ_packaging_norm_result = self.get_or_create_header('Сумма с округлением норма упаковки')
+        col_letter_summ_packaging_norm_result = self.get_or_create_header('Сумма с округлением норма упаковки c НДС')
+        col_letter_summ_packaging_norm_result_not_nds = self.get_or_create_header('Сумма с округлением норма упаковки c без НДС')
 
         for i, row in self.df.iterrows():
             idx = i + self.start_header
@@ -244,6 +247,16 @@ class CreateDictFindObjectsExcel:
                     f"={col_letter_price_with_nds}{idx} * {col_letter_kol}{idx}"
                 self.obj_money_style_rub(self.ws[f'{col_letter_summ_base}{idx}'])
 
+
+                self.ws[f'{col_letter_price_not_nds}{idx}'] = request_product.price_not_nds
+                self.obj_money_style_rub(self.ws[f'{col_letter_price_not_nds}{idx}'])
+
+                self.ws[f'{col_letter_summ_base_not_nds}{idx}'] = \
+                    f"={col_letter_price_not_nds}{idx} * {col_letter_kol}{idx}"
+                self.obj_money_style_rub(self.ws[f'{col_letter_summ_base_not_nds}{idx}'])
+
+
+
                 request_product_packaging_norm = self.get_float(request_product.packaging_norm)
 
                 self.ws[f'{col_letter_packaging_norm}{idx}'] = request_product_packaging_norm
@@ -263,8 +276,16 @@ class CreateDictFindObjectsExcel:
 
                 self.obj_money_style_rub(self.ws[f'{col_letter_summ_packaging_norm_result}{idx}'])
 
+                self.ws[f'{col_letter_summ_packaging_norm_result_not_nds}{idx}'] = \
+                    f"={col_letter_price_not_nds}{idx} * {col_letter_packaging_norm_result}{idx}"
+
+                self.obj_money_style_rub(self.ws[f'{col_letter_summ_packaging_norm_result_not_nds}{idx}'])
+
+
+
                 sum_obj = self.sellable_quantity(Decimal(request_product_packaging_norm),count_product) * request_product.price_with_nds
                 self.summ_packaging_norm_result_all += sum_obj
+
 
             else:
                 self.ws[f'{col_letter_art}{idx}'] = art_obj
@@ -358,6 +379,9 @@ class CreateDictFindObjectsExcel:
                     col_letter_projects_type_client_discount = self.get_or_create_header(f'{discount_type_client_type} проектная скидка')
                     col_letter_projects_type_client_sale_solo = self.get_or_create_header(f'{discount_type_client_type} проектная шт с НДС')
                     col_letter_projects_type_client_sale_summ = self.get_or_create_header(f'{discount_type_client_type} проектная сумма кратно уп. с НДС')
+                    col_letter_projects_type_client_sale_solo_not_nds = self.get_or_create_header(f'{discount_type_client_type} проектная шт без НДС')
+                    col_letter_projects_type_client_sale_summ_not_nds = self.get_or_create_header(f'{discount_type_client_type} проектная сумма кратно уп. без НДС')
+
 
                     project_discount,color_project_discount = self.get_project_discount(
                         discount_type_client_type,
@@ -380,6 +404,30 @@ class CreateDictFindObjectsExcel:
                     )
                     self.obj_money_style_rub(self.ws[f'{col_letter_projects_type_client_sale_summ}{idx}'])
                     self.ws[f'{col_letter_projects_type_client_sale_summ}{idx}'].fill = self.color_section(color_type_client_type)
+
+
+
+
+
+                    self.ws[f'{col_letter_projects_type_client_sale_solo_not_nds}{idx}'] = (
+                        f'={col_letter_price_not_nds}{idx}*(1-{col_letter_projects_type_client_discount}{idx}/100)'
+                    )
+
+                    self.obj_money_style_rub(self.ws[f'{col_letter_projects_type_client_sale_solo_not_nds}{idx}'])
+                    self.ws[f'{col_letter_projects_type_client_sale_solo_not_nds}{idx}'].fill = self.color_section(
+                        color_type_client_type)
+
+
+                    self.ws[f'{col_letter_projects_type_client_sale_summ_not_nds}{idx}'] = (
+                        f'={col_letter_packaging_norm_result}{idx}*{col_letter_projects_type_client_sale_solo_not_nds}{idx}'
+                    )
+                    self.obj_money_style_rub(self.ws[f'{col_letter_projects_type_client_sale_summ_not_nds}{idx}'])
+                    self.ws[f'{col_letter_projects_type_client_sale_summ_not_nds}{idx}'].fill = self.color_section(
+                        color_type_client_type)
+
+
+
+
 
         print("Расчет сумм по типам клиентов")
         """Расчет сумм по типам клиентов"""

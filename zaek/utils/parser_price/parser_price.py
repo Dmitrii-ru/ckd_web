@@ -258,6 +258,9 @@ class DataPrice(ParserPrice):
                 product.summary_price_group = summary_price_group
                 product.classification = classification
                 product.price_group_list = data.price_group_list
+                product.price_not_nds = data.price_not_nds
+                product.price_with_nds = data.price_with_nds
+
                 products_to_update.append(product)
 
             else:

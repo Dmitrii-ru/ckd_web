@@ -14,6 +14,7 @@ from django.views.generic import ListView, DetailView
 
 from .utils.parser_price.consolidated_table import find_consolidated_table
 from .utils.parser_price.find_objects_in_load_excel import find_objects_in_load_excel
+from .utils.parser_price.preparing_data_for_loading_into import preparing_data_loading_into
 
 
 def index(request):
@@ -168,7 +169,7 @@ class InstructionDetailView(DetailView):
 
 def func_find_objects_view(request):
 
-    # try:
+    try:
         if request.method == 'POST':
             form = FindObjectsExcelForm(request.POST, request.FILES)
             if form.is_valid():
@@ -195,16 +196,18 @@ def func_find_objects_view(request):
             }
         )
 
-    # except Exception as e:
-    #     return render(
-    #         request,
-    #         template_name='zaek/info.html',
-    #         context={'massage': f'Сервер в отпуске ({e})'}
-    #     )
-    #
+    except Exception as e:
+        return render(
+            request,
+            template_name='zaek/info.html',
+            context={'massage': f'Сервер в отпуске ({e})'}
+        )
 
 
 
+def func_preparing_data_for_loading_into(request):
+    preparing_data_loading_into()
+    return render(request, 'zaek/preparing_data_loading_into.html')
 
 
 
