@@ -5,7 +5,8 @@ from django.shortcuts import render, get_object_or_404
 from urllib3.filepost import writer
 
 from .consts_zaek import base_columns, zaek_sheet, custom_price_name, price_name, price_groups, delimiter_price_csv
-from .forms import PriceLoadZaekForm, PriceLoadZaekGroupsForm, ConsolidatedTableForm, FindObjectsExcelForm
+from .forms import PriceLoadZaekForm, PriceLoadZaekGroupsForm, ConsolidatedTableForm, FindObjectsExcelForm, \
+    PreparingDataForLoadingForm
 from zaek.utils.parser_price.need_price import need_price_func
 from .models import ZaekPrice, Instruction, InstructionStep
 from django.utils import timezone
@@ -206,8 +207,42 @@ def func_find_objects_view(request):
 
 
 def func_preparing_data_for_loading_into(request):
-    preparing_data_loading_into()
-    return render(request, 'zaek/preparing_data_loading_into.html')
+    print('weqwe')
+    # try:
+
+    if request.method == 'POST':
+        form = PreparingDataForLoadingForm(request.POST, request.FILES)
+        if form.is_valid():
+            if request.FILES.get('file'):
+                excel_file = preparing_data_loading_into(request.FILES.get('file'),form.cleaned_data.get('сводная'))
+                if excel_file:
+                    response = HttpResponse(
+                        excel_file,
+                        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                    )
+                    response['Content-Disposition'] = 'attachment; filename="preparing_data.xlsx"'
+                    return response
+    else:
+        form = PreparingDataForLoadingForm()
+    return render(
+        request, 'zaek/preparing_data_loading_into.html',
+        {
+            'form': form,
+            "sheet_name": PreparingDataForLoadingForm.sheet_name,
+            'columns_list': ", ".join(PreparingDataForLoadingForm.columns)
+        }
+    )
+
+    # except Exception as e:
+    #     return render(
+    #         request,
+    #         template_name='zaek/info.html',
+    #         context={'massage': f'Сервер в отпуске ({e})'}
+    #     )
+    #
+    #
+
+
 
 
 

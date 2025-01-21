@@ -1,7 +1,10 @@
+from decimal import Decimal
+from email.policy import default
+
 import openpyxl
 from django.core.exceptions import ValidationError
 from django import forms
-from zaek.models import ZaekPrice
+from zaek.models import ZaekPrice, ClassificationPriceProduct
 
 
 def validate_columns_df(list_columns, df, sheet_name=None):
@@ -76,3 +79,56 @@ class FindObjectsExcelForm(BaseExcelForm):
     format_file = '.xlsx'
     columns = ['Арт','Кол']
     sheet_name = 'Запрос'
+
+class PreparingDataForLoadingForm(BaseExcelForm):
+    format_file = '.xlsx'
+    columns = ['Арт','Кол']
+    sheet_name = 'Запрос'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['сводная'] = forms.BooleanField(
+            label='Сводная',
+            required=False,
+            initial=False
+        )
+
+
+
+        # Добавляем динамические поля для каждого объекта из модели ClassificationPriceProduct
+        # for product in ClassificationPriceProduct.objects.all():
+        #     field_name = f'price_{product.id}'  # создаем имя поля
+        #     self.fields[field_name] = forms.DecimalField(
+        #         label=product.name,
+        #         required=False,
+        #         decimal_places=2,
+        #         max_digits=10,
+        #         min_value=0,
+        #         initial=0
+        #     )
+
+    # def clean(self):
+    #     cleaned_data = super().clean()
+    #     products = ClassificationPriceProduct.objects.all()
+    #
+    #     for product in products:
+    #         field_name = f'price_{product.id}'
+    #         price = cleaned_data.get(field_name)
+    #
+    #         if price is None:
+    #             raise ValidationError(f'Поле {product.name} не должно быть пустым.')
+    #
+    #         self._validate_price(product.name, price)
+    #
+    #     return cleaned_data
+    #
+    # def _validate_price(self, name, price):
+    #
+    #     if not isinstance(price, (int, float, Decimal)):
+    #         print(type(price))
+    #         raise ValidationError(f'Скидка для {name} должна быть числом.')
+    #     if price < 0:
+    #         raise ValidationError(f'Скидка для {name} не может быть отрицательной.')
+    #     if price > 10000:
+    #         raise ValidationError(f'Скидка {name} не может быть больше 10 000.')
+

@@ -6,6 +6,13 @@ from io import BytesIO
 from base_app.utils.errors_plase import create_error
 
 
+def art_format(art):
+    try:
+        return str(int(art))
+    except:
+        return str(art)
+
+
 def float_func(kol):
     try:
         if pd.isna(kol):
@@ -15,21 +22,26 @@ def float_func(kol):
         return 0.0
 
 
+def create_dict_consolidated_table(df=None):
+
+    new_data = {}
+    for i, row in df.iterrows():
+        art = art_format(row['Арт'])
+        kol = float_func(row['Кол'])
+        if art:
+            if new_data.get(art):
+                new_data[art] += kol
+            else:
+                new_data[art] = kol
+    return new_data
+
+
+
+
 
 def find_consolidated_table(file=None):
     try:
-        df = pd.read_excel(file)
-        new_data = {}
-        for i , row in df.iterrows():
-            art = row['Арт']
-            kol = float_func(row['Кол'])
-
-            if art:
-                if new_data.get(art):
-                    new_data[art] += kol
-                else:
-                    new_data[art] = kol
-        print('ww')
+        new_data = create_dict_consolidated_table(pd.read_excel(file))
         new_df = pd.DataFrame(list(new_data.items()),columns=['Арт','Кол'])
 
         b = BytesIO()

@@ -61,7 +61,7 @@ class CreateDictFindObjectsExcel:
 
     def get_float(self, obj):
         try:
-            print(f"DEBUG: raw obj={obj}, type={type(obj)}")
+
 
             if isinstance(obj, Decimal):
                 if obj.is_nan():
@@ -121,7 +121,7 @@ class CreateDictFindObjectsExcel:
         try:
 
             value = self.summ_packaging_norm_result_all
-            print(value,'ss')
+
             discounts = VolumeLevel.objects.all().order_by('start_value')
 
 
@@ -347,7 +347,7 @@ class CreateDictFindObjectsExcel:
             request_product = dict_request_products.get(art_obj)
 
             if request_product:
-                print(request_product)
+
                 for discount in request_product.classification.classification_discounts.all():
                     discount_type_client_type = discount.type_client.type
                     color_type_client_type = discount.type_client.color
@@ -449,12 +449,12 @@ class CreateDictFindObjectsExcel:
             )
 
         self.align_text_center()
-        print('ww')
+
         return self.wb
 
 
 
-def find_objects_in_load_excel(file=None):
+def find_objects_in_load_excel(file=None,):
         pd.read_excel(file)
         data_dict = {}
         for i , row in pd.read_excel(file).iterrows():

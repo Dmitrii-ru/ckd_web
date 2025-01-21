@@ -4,4 +4,11 @@
 
 {%block context%}
 
+<div class="d-flex justify-content-center text-center">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Загрузить</button>
+        </form>
+</div>
 {%endblock%}
