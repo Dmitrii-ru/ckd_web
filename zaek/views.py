@@ -214,13 +214,17 @@ def func_preparing_data_for_loading_into(request):
         form = PreparingDataForLoadingForm(request.POST, request.FILES)
         if form.is_valid():
             if request.FILES.get('file'):
+
                 excel_file = preparing_data_loading_into(request.FILES.get('file'),form.cleaned_data.get('сводная'))
                 if excel_file:
+                    from urllib.parse import quote
+                    file_name = quote(f"Обработанный {request.FILES.get('file').name}")
+
                     response = HttpResponse(
                         excel_file,
                         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                     )
-                    response['Content-Disposition'] = 'attachment; filename="preparing_data.xlsx"'
+                    response['Content-Disposition'] = f'attachment; filename="{file_name}"'
                     return response
     else:
         form = PreparingDataForLoadingForm()

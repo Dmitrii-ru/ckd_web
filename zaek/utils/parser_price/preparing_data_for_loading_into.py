@@ -43,7 +43,6 @@ class PreDataLoadingInto:
             for i , row in self.df_open.iterrows():
                self.list_object.add(self.art_format(row['Арт']))
 
-        print(self.list_object)
 
 
         self.create_dict_classification_pp_and_write_in_df()
