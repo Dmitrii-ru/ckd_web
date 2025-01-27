@@ -2,7 +2,6 @@ import hashlib
 import math
 from decimal import Decimal
 from io import BytesIO
-
 from openpyxl.styles import PatternFill
 
 from zaek.models import Product, ClassificationPriceProduct
@@ -44,12 +43,15 @@ class PreDataLoadingInto:
             for i , row in self.df_open.iterrows():
                self.list_object.add(self.art_format(row['Арт']))
 
+        print(self.list_object)
+
+
         self.create_dict_classification_pp_and_write_in_df()
         self.iter_data()
 
         return self.wb
 
-    from openpyxl.styles import PatternFill
+
 
     def generate_color_from_number(self,number):
         value_str = str(number)
@@ -77,6 +79,7 @@ class PreDataLoadingInto:
         return PatternFill(start_color=color_type_client_type, end_color=color_type_client_type, fill_type="solid")
 
     def create_dict_classification_pp_and_write_in_df(self):
+        """Создаем дефолтные значения"""
         for idx , value in enumerate(self.classification_pp,1):
             self.ws[f"A{idx}"] = value
             self.dict_classification_pp[value] = f'B{idx}'
@@ -123,8 +126,10 @@ class PreDataLoadingInto:
             return str(art)
 
     def iter_data(self):
+        """Обрабатываем данные из таблицы """
         products_filter = Product.objects.select_related('classification').filter(art__in=self.list_object)
         dict_products_filter = {obj.art: obj for obj in products_filter}
+
         l_row = self.header_row + 1
 
         letter_column_art = self.get_letter_column('Арт')
@@ -134,9 +139,13 @@ class PreDataLoadingInto:
         letter_column_classification= self.get_letter_column('Классификация ПП')
         letter_column_name = self.get_letter_column('Наименование')
 
+
+
+
         for i, row in self.df_open.iterrows():
+
             row_num = l_row + i
-            art = row['Арт']
+            art = self.art_format(row['Арт'])
             kol = self.get_float(row['Кол'])
             obj = dict_products_filter.get(art)
 
@@ -162,14 +171,11 @@ class PreDataLoadingInto:
                     self.ws[f"{letter_column_sale}{row_num}"].fill = self.color_section(classification_color)
 
 
+            else:
+                self.ws[f"{letter_column_art}{row_num}"] = art
+                self.ws[f"{letter_column_col}{row_num}"] = kol
+                self.ws[f"{letter_column_name}{row_num}"] = "Не найден"
 
-
-            #     print(obj)
-            #
-            #
-            #     print(obj, kol)
-            # else:
-            #     print()
 
 
 
@@ -179,5 +185,4 @@ def preparing_data_loading_into(excel,slodnaya_bool):
     output = BytesIO()
     data.save(output)
     output.seek(0)
-
     return output
