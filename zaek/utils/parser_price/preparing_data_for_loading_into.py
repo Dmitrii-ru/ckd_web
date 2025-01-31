@@ -34,8 +34,11 @@ class PreDataLoadingInto:
         self.color_classification_pp= {}
         self.base_wight_col = 20
         self.wraptext = True
+        self.let_row_summ_nds_ny = ''
+        self.let_row_summ_no_nds_ny = ''
         self.let_row_summ_nds = ''
         self.let_row_summ_no_nds = ''
+
 
     def obj_money_style_rub(self,obj):
         """Денежный стиль в рублях"""
@@ -110,12 +113,23 @@ class PreDataLoadingInto:
         self.header_row += 1
         self.ws[f"A{self.header_row}"] = 'Конкурент'
         self.ws[f"B{self.header_row}"] = 'Chint'
+
         self.header_row += 1
         self.ws[f"A{self.header_row}"] = 'Сумма без НДС'
         self.let_row_summ_no_nds = f"B{self.header_row}"
         self.header_row += 1
         self.ws[f"A{self.header_row}"] = 'Сумма без c НДС'
         self.let_row_summ_nds = f"B{self.header_row}"
+
+        self.header_row += 1
+        self.ws[f"A{self.header_row}"] = 'Н/У Сумма без НДС'
+        self.let_row_summ_no_nds_ny = f"B{self.header_row}"
+        self.header_row += 1
+        self.ws[f"A{self.header_row}"] = 'Н/У Сумма без c НДС'
+        self.let_row_summ_nds_ny = f"B{self.header_row}"
+
+
+
 
         self.dict_classification_pp['Конкурент'] = f'B{self.header_row + 1}'
         self.header_row+=3
@@ -161,14 +175,16 @@ class PreDataLoadingInto:
         letter_column_competitor =self.get_letter_column('Конкурент')
         letter_column_classification= self.get_letter_column('Классификация ПП')
         letter_column_name = self.get_letter_column('Наименование')
-        letter_packaging_norm = self.get_letter_column('Норма упаковки')
-        letter_packaging_norm_result = self.get_letter_column('Результат Норма упаковки')
         letter_column_price_no_nds = self.get_letter_column('Цена (без НДС) руб.')
         letter_column_price_nds = self.get_letter_column('Цена (с НДС) руб.')
         letter_column_price_no_nds_sale = self.get_letter_column('Скидка Цена (без НДС) руб.')
         letter_column_price_nds_sale = self.get_letter_column('Скидка Цена (с НДС) руб.')
         letter_column_price_no_nds_summ_sale = self.get_letter_column('Скидка Сумма (без НДС) руб. ')
         letter_column_price_nds_summ_sale = self.get_letter_column('Скидка Сумма (с НДС) руб.')
+        letter_packaging_norm = self.get_letter_column('Норма упаковки')
+        letter_packaging_norm_result = self.get_letter_column('Результат Норма упаковки')
+        letter_column_price_no_nds_summ_sale_ny = self.get_letter_column('Н/У Скидка Сумма (без НДС) руб. ')
+        letter_column_price_nds_summ_sale_ny = self.get_letter_column('Н/У Скидка Сумма (с НДС) руб.')
 
         for i, row in self.df_open.iterrows():
             row_num = self.header_row + 1 + i
@@ -196,6 +212,10 @@ class PreDataLoadingInto:
                     self.ws[f"{letter_column_classification}{row_num}"].fill = self.color_section(classification_color)
                     self.ws[f"{letter_column_sale}{row_num}"].fill = self.color_section(classification_color)
 
+
+
+
+
                 self.ws[f"{letter_packaging_norm}{row_num}"] = obj.packaging_norm
 
                 self.ws[f'{letter_packaging_norm_result}{row_num}'] = \
@@ -203,13 +223,13 @@ class PreDataLoadingInto:
                     f"{letter_column_col}{row_num}, " \
                     f"(INT({letter_column_col}{row_num} / {letter_packaging_norm}{row_num}) + 1) * {letter_packaging_norm}{row_num})"
 
-
+                """Цена за шт """
                 self.ws[f"{letter_column_price_no_nds}{row_num}"] = obj.price_not_nds
                 self.obj_money_style_rub(self.ws[f"{letter_column_price_no_nds}{row_num}"])
                 self.ws[f"{letter_column_price_nds}{row_num}"] = obj.price_with_nds
                 self.obj_money_style_rub( self.ws[f"{letter_column_price_nds}{row_num}"])
 
-
+                """Цна Шт со скидкой"""
                 self.ws[f'{letter_column_price_no_nds_sale}{row_num}'] = (
                     f'={letter_column_price_no_nds}{row_num}*(1-{letter_column_sale}{row_num}/100)'
                 )
@@ -220,15 +240,22 @@ class PreDataLoadingInto:
                 )
                 self.obj_money_style_rub(self.ws[f'{letter_column_price_nds_sale}{row_num}'])
 
-
+                """Расчет сумм"""
                 self.ws[f"{letter_column_price_no_nds_summ_sale}{row_num}"] = \
-                    f'={letter_packaging_norm_result}{row_num}*{letter_column_price_no_nds_sale}{row_num}'
+                    f'={letter_column_col}{row_num}*{letter_column_price_no_nds_sale}{row_num}'
                 self.obj_money_style_rub(self.ws[f"{letter_column_price_no_nds_summ_sale}{row_num}"])
 
-
                 self.ws[f"{letter_column_price_nds_summ_sale}{row_num}"] = \
-                     f'={letter_packaging_norm_result}{row_num}*{letter_column_price_nds_sale}{row_num}'
+                    f'={letter_column_col}{row_num}*{letter_column_price_nds_sale}{row_num}'
                 self.obj_money_style_rub(self.ws[f"{letter_column_price_nds_summ_sale}{row_num}"])
+
+                self.ws[f"{letter_column_price_no_nds_summ_sale_ny}{row_num}"] = \
+                    f'={letter_packaging_norm_result}{row_num}*{letter_column_price_no_nds_sale}{row_num}'
+                self.obj_money_style_rub(self.ws[f"{letter_column_price_no_nds_summ_sale_ny}{row_num}"])
+
+                self.ws[f"{letter_column_price_nds_summ_sale_ny}{row_num}"] = \
+                     f'={letter_packaging_norm_result}{row_num}*{letter_column_price_nds_sale}{row_num}'
+                self.obj_money_style_rub(self.ws[f"{letter_column_price_nds_summ_sale_ny}{row_num}"])
 
 
             else:
@@ -236,8 +263,7 @@ class PreDataLoadingInto:
                 self.ws[f"{letter_column_col}{row_num}"] = kol
                 self.ws[f"{letter_column_name}{row_num}"] = "Не найден"
 
-
-
+        """Итого по суммам по колонкам"""
         self.ws[self.let_row_summ_no_nds] = \
             f"=SUM({letter_column_price_no_nds_summ_sale}{self.header_row +1 }:{letter_column_price_no_nds_summ_sale}{row_num})"
         self.obj_money_style_rub(self.ws[f"{letter_column_price_no_nds_summ_sale}{row_num + 1}"])
@@ -247,6 +273,17 @@ class PreDataLoadingInto:
             f"=SUM({letter_column_price_nds_summ_sale}{self.header_row + 1}:{letter_column_price_nds_summ_sale}{row_num})"
         self.obj_money_style_rub(self.ws[f"{letter_column_price_nds_summ_sale}{row_num + 1}"])
         self.obj_money_style_rub(self.ws[self.let_row_summ_nds])
+
+        self.ws[self.let_row_summ_no_nds_ny] = \
+            f"=SUM({letter_column_price_no_nds_summ_sale_ny}{self.header_row +1 }:{letter_column_price_no_nds_summ_sale_ny}{row_num})"
+        self.obj_money_style_rub(self.ws[f"{letter_column_price_no_nds_summ_sale_ny}{row_num + 1}"])
+        self.obj_money_style_rub(self.ws[self.let_row_summ_no_nds_ny])
+
+        self.ws[self.let_row_summ_nds_ny] = \
+            f"=SUM({letter_column_price_nds_summ_sale_ny}{self.header_row + 1}:{letter_column_price_nds_summ_sale_ny}{row_num})"
+        self.obj_money_style_rub(self.ws[f"{letter_column_price_nds_summ_sale_ny}{row_num + 1}"])
+        self.obj_money_style_rub(self.ws[self.let_row_summ_nds_ny])
+
 
 
 
