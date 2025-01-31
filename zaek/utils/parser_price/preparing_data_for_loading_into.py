@@ -38,6 +38,8 @@ class PreDataLoadingInto:
         self.let_row_summ_no_nds_ny = ''
         self.let_row_summ_nds = ''
         self.let_row_summ_no_nds = ''
+        self.color_warning = 'cc3333'
+        self.color_true ="00a86b"
 
 
     def obj_money_style_rub(self,obj):
@@ -47,7 +49,6 @@ class PreDataLoadingInto:
     def pars_data_loading_into(self):
         self.df_open = pd.read_excel(self.close_df)
         self.list_object = set()
-
         if self.slodnaya_bool:
             cons = create_dict_consolidated_table(self.df_open)
             self.df_open = pd.DataFrame(list(cons.items()), columns=['Арт', 'Кол'])
@@ -56,18 +57,14 @@ class PreDataLoadingInto:
             for i , row in self.df_open.iterrows():
                self.list_object.add(self.art_format(row['Арт']))
 
-
-
         self.create_dict_classification_pp_and_write_in_df()
         self.iter_data()
-
         return self.wb
 
 
 
     def generate_color_from_number(self,number):
         value_str = str(number)
-
         value_hash = hashlib.md5(value_str.encode()).hexdigest()
         r = int(value_hash[:2], 16)
         g = int(value_hash[2:4], 16)
@@ -77,6 +74,7 @@ class PreDataLoadingInto:
 
 
     def get_letter_column(self,key):
+        """Готовим хедар для таблицы """
         wight_col = self.base_wight_col
         value = self.dict_header.get(key)
         if value:
@@ -217,6 +215,12 @@ class PreDataLoadingInto:
                     f"{letter_column_col}{row_num}, " \
                     f"(INT({letter_column_col}{row_num} / {letter_packaging_norm}{row_num}) + 1) * {letter_packaging_norm}{row_num})"
 
+                self.ws[f'{letter_packaging_norm_result}{row_num}'].fill = self.color_section(
+                    self.color_warning if kol % obj.packaging_norm != 0 else self.color_true
+                )
+
+
+
                 """Цена за шт """
                 self.ws[f"{letter_column_price_no_nds}{row_num}"] = obj.price_not_nds
                 self.obj_money_style_rub(self.ws[f"{letter_column_price_no_nds}{row_num}"])
@@ -251,11 +255,11 @@ class PreDataLoadingInto:
                      f'={letter_packaging_norm_result}{row_num}*{letter_column_price_nds_sale}{row_num}'
                 self.obj_money_style_rub(self.ws[f"{letter_column_price_nds_summ_sale_ny}{row_num}"])
 
-
             else:
                 self.ws[f"{letter_column_art}{row_num}"] = art
                 self.ws[f"{letter_column_col}{row_num}"] = kol
                 self.ws[f"{letter_column_name}{row_num}"] = "Не найден"
+
 
         """Итого по суммам по колонкам"""
         self.ws[self.let_row_summ_no_nds] = \
