@@ -2,7 +2,7 @@ import hashlib
 import math
 from decimal import Decimal
 from io import BytesIO
-from openpyxl.styles import PatternFill
+from openpyxl.styles import PatternFill, NamedStyle, Alignment
 
 from zaek.models import Product, ClassificationPriceProduct
 import pandas as pd
@@ -12,6 +12,9 @@ from openpyxl.utils import get_column_letter, column_index_from_string
 
 
 class PreDataLoadingInto:
+    ruble_style = NamedStyle(name="RubleStyle")
+    ruble_style.number_format = '#,##0.00 "₽"'
+
     def __init__(
             self,
             excel ,
@@ -29,7 +32,14 @@ class PreDataLoadingInto:
         self.dict_classification_pp = {}
         self.dict_header = {}
         self.color_classification_pp= {}
+        self.base_wight_col = 20
+        self.wraptext = True
+        self.let_row_summ_nds = ''
+        self.let_row_summ_no_nds = ''
 
+    def obj_money_style_rub(self,obj):
+        """Денежный стиль в рублях"""
+        obj.number_format = PreDataLoadingInto.ruble_style.number_format
 
     def pars_data_loading_into(self):
         self.df_open = pd.read_excel(self.close_df)
@@ -64,6 +74,7 @@ class PreDataLoadingInto:
 
 
     def get_letter_column(self,key):
+        wight_col = self.base_wight_col
         value = self.dict_header.get(key)
         if value:
             return value
@@ -71,6 +82,13 @@ class PreDataLoadingInto:
         self.dict_header[key]= col_letter
 
         self.ws[f"{col_letter}{self.header_row}"] = key
+        len_key = len(key)
+        if len_key < self.base_wight_col:
+            wight_col = len_key +2
+
+        self.ws.column_dimensions[col_letter].width = wight_col
+        # self.ws[f"{col_letter}{self.header_row }"].alignment = Alignment(wrapText=True)
+        self.ws[f"{col_letter}{self.header_row }"].fill = self.color_section('98c793')
         return col_letter
 
     def color_section(self,color_type_client_type):
@@ -84,15 +102,21 @@ class PreDataLoadingInto:
             self.dict_classification_pp[value] = f'B{idx}'
             self.ws[f"B{idx}"] = 0
             self.header_row=idx
-
             color = self.generate_color_from_number(idx)
             self.color_classification_pp[value] = color
             self.ws[f"A{idx}"].fill = self.color_section(color)
             self.ws[f"B{idx}"].fill = self.color_section(color)
 
+        self.header_row += 1
+        self.ws[f"A{self.header_row}"] = 'Конкурент'
+        self.ws[f"B{self.header_row}"] = 'Chint'
+        self.header_row += 1
+        self.ws[f"A{self.header_row}"] = 'Сумма без НДС'
+        self.let_row_summ_no_nds = f"B{self.header_row}"
+        self.header_row += 1
+        self.ws[f"A{self.header_row}"] = 'Сумма без c НДС'
+        self.let_row_summ_nds = f"B{self.header_row}"
 
-        self.ws[f"A{self.header_row + 1}"] = 'Конкурент'
-        self.ws[f"B{self.header_row + 1}"] = 'Chint'
         self.dict_classification_pp['Конкурент'] = f'B{self.header_row + 1}'
         self.header_row+=3
 
@@ -118,32 +142,36 @@ class PreDataLoadingInto:
             ret = 0.0
         return ret
 
+
     def art_format(self,art):
         try:
             return str(int(art))
         except:
             return str(art)
 
+
     def iter_data(self):
         """Обрабатываем данные из таблицы """
         products_filter = Product.objects.select_related('classification').filter(art__in=self.list_object)
         dict_products_filter = {obj.art: obj for obj in products_filter}
-
-        l_row = self.header_row + 1
-
+        row_num = 0
         letter_column_art = self.get_letter_column('Арт')
         letter_column_col = self.get_letter_column('Кол')
         letter_column_sale = self.get_letter_column('Скидка')
         letter_column_competitor =self.get_letter_column('Конкурент')
         letter_column_classification= self.get_letter_column('Классификация ПП')
         letter_column_name = self.get_letter_column('Наименование')
-
-
-
+        letter_packaging_norm = self.get_letter_column('Норма упаковки')
+        letter_packaging_norm_result = self.get_letter_column('Результат Норма упаковки')
+        letter_column_price_no_nds = self.get_letter_column('Цена (без НДС) руб.')
+        letter_column_price_nds = self.get_letter_column('Цена (с НДС) руб.')
+        letter_column_price_no_nds_sale = self.get_letter_column('Скидка Цена (без НДС) руб.')
+        letter_column_price_nds_sale = self.get_letter_column('Скидка Цена (с НДС) руб.')
+        letter_column_price_no_nds_summ_sale = self.get_letter_column('Скидка Сумма (без НДС) руб. ')
+        letter_column_price_nds_summ_sale = self.get_letter_column('Скидка Сумма (с НДС) руб.')
 
         for i, row in self.df_open.iterrows():
-
-            row_num = l_row + i
+            row_num = self.header_row + 1 + i
             art = self.art_format(row['Арт'])
             kol = self.get_float(row['Кол'])
             obj = dict_products_filter.get(art)
@@ -158,7 +186,6 @@ class PreDataLoadingInto:
                     'Нет данных'
                 )
 
-
                 self.ws[f"{letter_column_sale}{row_num}"] = f"={classification_letter_num}"
                 comp_letter_num = self.dict_classification_pp.get('Конкурент', 'Нет данных')
                 self.ws[f"{letter_column_competitor}{row_num}"] = f"={comp_letter_num}"
@@ -169,11 +196,57 @@ class PreDataLoadingInto:
                     self.ws[f"{letter_column_classification}{row_num}"].fill = self.color_section(classification_color)
                     self.ws[f"{letter_column_sale}{row_num}"].fill = self.color_section(classification_color)
 
+                self.ws[f"{letter_packaging_norm}{row_num}"] = obj.packaging_norm
+
+                self.ws[f'{letter_packaging_norm_result}{row_num}'] = \
+                    f"=IF(MOD({letter_column_col}{row_num}, {letter_packaging_norm}{row_num}) = 0, " \
+                    f"{letter_column_col}{row_num}, " \
+                    f"(INT({letter_column_col}{row_num} / {letter_packaging_norm}{row_num}) + 1) * {letter_packaging_norm}{row_num})"
+
+
+                self.ws[f"{letter_column_price_no_nds}{row_num}"] = obj.price_not_nds
+                self.obj_money_style_rub(self.ws[f"{letter_column_price_no_nds}{row_num}"])
+                self.ws[f"{letter_column_price_nds}{row_num}"] = obj.price_with_nds
+                self.obj_money_style_rub( self.ws[f"{letter_column_price_nds}{row_num}"])
+
+
+                self.ws[f'{letter_column_price_no_nds_sale}{row_num}'] = (
+                    f'={letter_column_price_no_nds}{row_num}*(1-{letter_column_sale}{row_num}/100)'
+                )
+                self.obj_money_style_rub(self.ws[f'{letter_column_price_no_nds_sale}{row_num}'])
+
+                self.ws[f'{letter_column_price_nds_sale}{row_num}'] = (
+                    f'={letter_column_price_nds}{row_num}*(1-{letter_column_sale}{row_num}/100)'
+                )
+                self.obj_money_style_rub(self.ws[f'{letter_column_price_nds_sale}{row_num}'])
+
+
+                self.ws[f"{letter_column_price_no_nds_summ_sale}{row_num}"] = \
+                    f'={letter_packaging_norm_result}{row_num}*{letter_column_price_no_nds_sale}{row_num}'
+                self.obj_money_style_rub(self.ws[f"{letter_column_price_no_nds_summ_sale}{row_num}"])
+
+
+                self.ws[f"{letter_column_price_nds_summ_sale}{row_num}"] = \
+                     f'={letter_packaging_norm_result}{row_num}*{letter_column_price_nds_sale}{row_num}'
+                self.obj_money_style_rub(self.ws[f"{letter_column_price_nds_summ_sale}{row_num}"])
+
 
             else:
                 self.ws[f"{letter_column_art}{row_num}"] = art
                 self.ws[f"{letter_column_col}{row_num}"] = kol
                 self.ws[f"{letter_column_name}{row_num}"] = "Не найден"
+
+
+
+        self.ws[self.let_row_summ_no_nds] = \
+            f"=SUM({letter_column_price_no_nds_summ_sale}{self.header_row +1 }:{letter_column_price_no_nds_summ_sale}{row_num})"
+        self.obj_money_style_rub(self.ws[f"{letter_column_price_no_nds_summ_sale}{row_num + 1}"])
+        self.obj_money_style_rub(self.ws[self.let_row_summ_no_nds])
+
+        self.ws[self.let_row_summ_nds] = \
+            f"=SUM({letter_column_price_nds_summ_sale}{self.header_row + 1}:{letter_column_price_nds_summ_sale}{row_num})"
+        self.obj_money_style_rub(self.ws[f"{letter_column_price_nds_summ_sale}{row_num + 1}"])
+        self.obj_money_style_rub(self.ws[self.let_row_summ_nds])
 
 
 
