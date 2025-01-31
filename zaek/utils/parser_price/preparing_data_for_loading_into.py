@@ -113,6 +113,7 @@ class PreDataLoadingInto:
         self.header_row += 1
         self.ws[f"A{self.header_row}"] = 'Конкурент'
         self.ws[f"B{self.header_row}"] = 'Chint'
+        self.dict_classification_pp['Конкурент'] = f'B{self.header_row }'
 
         self.header_row += 1
         self.ws[f"A{self.header_row}"] = 'Сумма без НДС'
@@ -128,10 +129,6 @@ class PreDataLoadingInto:
         self.ws[f"A{self.header_row}"] = 'Н/У Сумма без c НДС'
         self.let_row_summ_nds_ny = f"B{self.header_row}"
 
-
-
-
-        self.dict_classification_pp['Конкурент'] = f'B{self.header_row + 1}'
         self.header_row+=3
 
     def get_float(self, obj):
@@ -211,9 +208,6 @@ class PreDataLoadingInto:
                 if classification_color:
                     self.ws[f"{letter_column_classification}{row_num}"].fill = self.color_section(classification_color)
                     self.ws[f"{letter_column_sale}{row_num}"].fill = self.color_section(classification_color)
-
-
-
 
 
                 self.ws[f"{letter_packaging_norm}{row_num}"] = obj.packaging_norm
